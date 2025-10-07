@@ -37,11 +37,40 @@ out/
 .vscode/
 
 
-### Application Config ###
-# Spring Boot or YAML configuration files
+# ----------------------------------------
+# Spring Boot & Configuration Files
+# ----------------------------------------
+# 실제 비밀번호/토큰이 들어있는 설정 파일은 업로드 금지
 application.yml
-application.properties
-
-# If you have multiple profiles like dev/test/prod:
 application-*.yml
+application.properties
 application-*.properties
+.env
+*.env
+
+
+# ----------------------------------------
+# Log files
+# ----------------------------------------
+logs/
+*.log
+*.log.*
+
+# ----------------------------------------
+# Database / Local files
+# ----------------------------------------
+*.db
+*.sqlite
+*.mv.db
+*.h2.db
+
+# ----------------------------------------
+# macOS / Windows / Linux system files
+# ----------------------------------------
+.DS_Store
+Thumbs.db
+ehthumbs.db
+*.swp
+*.swo
+*.tmp
+~$*
