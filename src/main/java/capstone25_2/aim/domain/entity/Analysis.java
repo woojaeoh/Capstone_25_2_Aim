@@ -1,4 +1,4 @@
-package capstone25_2.aim.domain;
+package capstone25_2.aim.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -10,7 +10,7 @@ import lombok.Setter;
 @NoArgsConstructor
 public class Analysis {
 
-    @Id @GeneratedValue
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     private String hiddenOpinion;

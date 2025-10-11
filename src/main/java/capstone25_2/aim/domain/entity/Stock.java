@@ -1,4 +1,4 @@
-package capstone25_2.aim.domain;
+package capstone25_2.aim.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -13,7 +13,7 @@ import java.util.List;
 @NoArgsConstructor
 public class Stock {
 
-    @Id @GeneratedValue
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name ="stock_id")
     private Long id;
 

@@ -1,4 +1,4 @@
-package capstone25_2.aim.domain;
+package capstone25_2.aim.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -12,14 +12,14 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class AnalystMetrics {
 
-    @Id @GeneratedValue
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Float accuracyRate; //정확도
-    private Float returnRate; //수익률
-    private Float targetDiffRate; //목표가 오차율
-    private Float avgReturnDiff; //애널리스트 평균대비 수익률 오차
-    private Float avgTargetDiff; //애널리스트 평균 대비 목표가 오차율
+    private Double accuracyRate; //정확도
+    private Double returnRate; //수익률
+    private Double targetDiffRate; //목표가 오차율
+    private Double avgReturnDiff; //애널리스트 평균대비 수익률 오차
+    private Double avgTargetDiff; //애널리스트 평균 대비 목표가 오차율
 
     private LocalDateTime updatedAt;
 

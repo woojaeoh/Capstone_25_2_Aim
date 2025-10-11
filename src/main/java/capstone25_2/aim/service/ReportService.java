@@ -1,6 +1,6 @@
 package capstone25_2.aim.service;
 
-import capstone25_2.aim.domain.Report;
+import capstone25_2.aim.domain.entity.Report;
 import capstone25_2.aim.repository.ReportRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

@@ -1,7 +1,6 @@
 package capstone25_2.aim.repository;
 
-import capstone25_2.aim.domain.Analyst;
-import org.springframework.data.convert.ReadingConverter;
+import capstone25_2.aim.domain.entity.Analyst;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

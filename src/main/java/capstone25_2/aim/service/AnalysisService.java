@@ -1,6 +1,6 @@
 package capstone25_2.aim.service;
 
-import capstone25_2.aim.domain.Analysis;
+import capstone25_2.aim.domain.entity.Analysis;
 import capstone25_2.aim.repository.AnalysisRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

@@ -1,6 +1,6 @@
 package capstone25_2.aim.repository;
 
-import capstone25_2.aim.domain.Analysis;
+import capstone25_2.aim.domain.entity.Analysis;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 

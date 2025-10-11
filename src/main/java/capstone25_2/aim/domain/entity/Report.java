@@ -1,4 +1,4 @@
-package capstone25_2.aim.domain;
+package capstone25_2.aim.domain.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -12,9 +12,9 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 public class Report {
 
-    @Id @GeneratedValue
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "report_id")
-    private String id;
+    private Long id;
 
     private String reportTitle;
 
