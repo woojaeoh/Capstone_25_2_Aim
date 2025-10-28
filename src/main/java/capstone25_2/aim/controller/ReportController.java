@@ -22,6 +22,14 @@ public class ReportController {
     private final ReportService reportService;
     private final AnalysisService analysisService;
 
+    // 특정 애널리스트의 리포트 리스트 조회
+    @GetMapping("/analyst/{analystId}")
+    public List<ReportResponseDTO> getReportsByAnalystId(@PathVariable Long analystId) {
+        return reportService.getReportsByAnalystId(analystId).stream()
+                .map(ReportResponseDTO::fromEntity)
+                .toList();
+    }
+
     // 특정 종목의 리포트 리스트 조회
     @GetMapping("/stock/{stockId}")
     public List<ReportResponseDTO> getReportsByStockId(@PathVariable Long stockId) {
