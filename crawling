@@ -1,0 +1,149 @@
+#!/usr/bin/env python
+# 네입ㅓ크롤링 수정버전
+import os
+import re
+import time
+import requests
+import logging
+from urllib.parse import urljoin, urlparse, parse_qs
+from bs4 import BeautifulSoup
+from tqdm import tqdm
+
+USER_AGENT = ("Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+              "AppleWebKit/537.36 (KHTML, like Gecko) "
+              "Chrome/117.0 Safari/537.36")
+BASE_LIST_URL = "https://finance.naver.com/research/company_list.naver"
+BASE_DOMAIN = "https://finance.naver.com"
+logging.basicConfig(level=logging.INFO, format='[%(levelname)s] %(message)s')
+def get_desktop_path():
+    return os.path.join(os.path.expanduser("~"), "Desktop", "re")
+
+def safe_filename(s: str) -> str:
+    return re.sub(r'[\\/:*?"<>|]', '_', s).strip()
+def get_soup(session, url):
+    """HTML 파싱"""
+    r = session.get(url, timeout=20)
+    r.raise_for_status()
+    r.encoding = r.apparent_encoding or "utf-8"
+    return BeautifulSoup(r.text, 'html.parser')
+def normalize_detail_href(href: str) -> str:
+    if not href:
+        return ""
+    href = href.strip()
+    if href.startswith('company_read.naver'):
+        href = '/research/' + href
+    if href.startswith('/company_read.naver'):
+        href = '/research' + href
+    return urljoin(BASE_DOMAIN, href)
+
+def find_detail_links(soup, target_code: str):
+    links = []
+    report_table = soup.find('table', class_='type_1')
+    if not report_table:
+        return []
+
+    for a in report_table.find_all('a', href=True):
+        href = a['href']
+        if 'company_read.naver' not in href:
+            continue
+        q = parse_qs(urlparse(href).query)
+        itemcode = (q.get('itemCode') or q.get('itemcode') or [''])[0]
+        if itemcode != target_code:
+            continue
+        full = normalize_detail_href(href)
+        links.append(full)
+
+    return list(set(links))
+
+def parse_detail_info(soup):
+    stock_name_tag = soup.find("h3")
+    stock_name = stock_name_tag.get_text(strip=True) if stock_name_tag else "UnknownStock"
+
+    date_str, broker = "UnknownDate", "UnknownBroker"
+    p = soup.find("p", class_="source")
+    if p:
+        text = p.get_text(" ", strip=True)
+        parts = [t.strip() for t in text.split("|") if t.strip()]
+        if len(parts) >= 2:
+            broker = parts[0].split()[0]
+            date_str = parts[1].replace(".", "")
+    return stock_name, date_str, broker
+
+def extract_pdf_url(soup):
+    for a in soup.find_all('a', href=True):
+        if '.pdf' in a['href'].lower():
+            return urljoin(BASE_DOMAIN, a['href'])
+    for iframe in soup.find_all('iframe', src=True):
+        if '.pdf' in iframe['src'].lower():
+            return urljoin(BASE_DOMAIN, iframe['src'])
+    return None
+
+def download_pdf(session, url, path):
+    try:
+        with session.get(url, stream=True, timeout=60) as r:
+            r.raise_for_status()
+            with open(path, "wb") as f:
+                for chunk in r.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+        return True
+    except Exception as e:
+        logging.error(f"다운 실패: {e}")
+        return False
+
+def main(code="005930", start=1, end=1, delay=0.5, overwrite=False):
+    session = requests.Session()
+    session.headers.update({"User-Agent": USER_AGENT, "Referer": BASE_DOMAIN})
+
+    outdir = get_desktop_path()
+    os.makedirs(outdir, exist_ok=True)
+
+    def list_url_for(page: int) -> str:
+        return (f"{BASE_LIST_URL}"
+                f"?keyword=&brokerCode=&writeFromDate=&writeToDate="
+                f"&searchType=itemCode&itemCode={code}&page={page}")
+
+    logging.info(f"다운로드 대상 코드: {code}")
+    logging.info(f"저장 폴더: {outdir}")
+
+    for page in range(start, end + 1):
+        list_url = list_url_for(page)
+        try:
+            soup = get_soup(session, list_url)
+        except Exception as e:
+            logging.error(f"페이지 로딩 실패: {list_url} | {e}")
+            continue
+
+        detail_links = find_detail_links(soup, code)
+        logging.info(f"[INFO] Page {page}: 수집된 상세 링크 수 = {len(detail_links)}")
+
+        if not detail_links:
+            logging.info(f"[INFO] Page {page}: 다운로드할 리포트가 없어 작업을 중단합니다.")
+            break
+
+        for detail_url in tqdm(detail_links, desc=f"Page {page}"):
+            try:
+                detail_soup = get_soup(session, detail_url)
+                stock, date, broker = parse_detail_info(detail_soup)
+
+                pdf_url = extract_pdf_url(detail_soup)
+                if not pdf_url:
+                    logging.info(f"[SKIP] PDF 링크 없음: {detail_url}")
+                    continue
+                filename = f"{safe_filename(broker)}_{date}_삼성전자.pdf"
+                save_path = os.path.join(outdir, filename)
+
+                if os.path.exists(save_path) and not overwrite:
+                    logging.info(f"[SKIP] 이미 존재: {filename}")
+                    continue
+                ok = download_pdf(session, pdf_url, save_path)
+                if ok:
+                    time.sleep(delay)
+
+            except Exception as e:
+                logging.error(f"상세 페이지 처리 중 오류: {detail_url} | {e}")
+                continue
+
+# -------------------------------
+if __name__ == "__main__":
+    main(code="005930", start=1, end=1, delay=0.5, overwrite=False) #여기 수정하면서 사용해
