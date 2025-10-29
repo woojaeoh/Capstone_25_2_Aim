@@ -131,6 +131,7 @@ def main(code="005930", start=1, end=1, delay=0.5, overwrite=False):
                     logging.info(f"[SKIP] PDF 링크 없음: {detail_url}")
                     continue
                 filename = f"{safe_filename(broker)}_{date}_삼성전자.pdf"
+              #filename = f"{safe_filename(broker)}_{date}_{safe_filename(stock)}.pdf" 
                 save_path = os.path.join(outdir, filename)
 
                 if os.path.exists(save_path) and not overwrite:
