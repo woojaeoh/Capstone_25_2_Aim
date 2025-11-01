@@ -1,6 +1,7 @@
 package capstone25_2.aim.domain.dto.report;
 
 import capstone25_2.aim.domain.entity.Report;
+import capstone25_2.aim.domain.entity.SurfaceOpinion;
 import lombok.*;
 
 import java.time.LocalDate;
@@ -14,9 +15,9 @@ public class ReportDetailDTO {
     private Long reportId;
     private String reportTitle;
     private LocalDate reportDate;
-    private String surfaceOpinion;
+    private SurfaceOpinion surfaceOpinion;
     private Integer targetPrice;
-    private String hiddenOpinion;
+    private SurfaceOpinion hiddenOpinion;
     private Long prevReportId;
 
     private String analystName;
@@ -27,9 +28,9 @@ public class ReportDetailDTO {
                 .reportId(report.getId())
                 .reportTitle(report.getReportTitle())
                 .reportDate(LocalDate.from(report.getReportDate()))
-                .surfaceOpinion(report.getSurfaceOpinion().name())
+                .surfaceOpinion(SurfaceOpinion.valueOf(report.getSurfaceOpinion().name()))
                 .targetPrice(report.getTargetPrice())
-                .hiddenOpinion(report.getHiddenOpinion())
+                .hiddenOpinion(SurfaceOpinion.valueOf((report.getHiddenOpinion()).name()))
                 .prevReportId(report.getPrevReport() != null ? report.getPrevReport().getId() : null)
                 .analystName(report.getAnalyst().getAnalystName())
                 .firmName(report.getAnalyst().getFirmName())

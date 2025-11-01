@@ -25,8 +25,8 @@ public class Report {
 
     private Integer targetPrice;
 
-    @Column(columnDefinition = "TEXT")
-    private String hiddenOpinion;
+    @Enumerated(EnumType.STRING) //이거 무조건 ordinal 아니고 string으로 써야함. -> enum 변경되었을떄 반영 가능.
+    private HiddenOpinion hiddenOpinion; //BUY, SELL
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "prev_report_id")
