@@ -46,7 +46,7 @@ public class ReportController {
 
     // 종목별 목표가 변동 추이 데이터 조회
     @GetMapping("/stock/{stockId}/target-price-trend")
-    @Operation(summary = "종목별 목표가 변동 추이 조회", description = "특정 종목의 최신 5년간 목표가 변동 추이를 그래프 데이터로 조회합니다.")
+    @Operation(summary = "종목별 목표가 변동 추이 조회", description = "특정 종목의 최신 5년간 목표가 변동 추이를 그래프 데이터로 조회합니다. 직전 대비 목표가 변동률(+8.89%, -13.15% 형식)을 포함합니다.")
     public TargetPriceTrendResponseDTO getTargetPriceTrend(
             @Parameter(description = "종목 ID") @PathVariable Long stockId) {
         return reportService.getTargetPriceTrend(stockId);

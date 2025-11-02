@@ -16,5 +16,6 @@ public class TargetPriceTrendDTO {
     private String analystName;
     private String firmName;
     private Long reportId;
+    private String percentageChange;
 
 }
