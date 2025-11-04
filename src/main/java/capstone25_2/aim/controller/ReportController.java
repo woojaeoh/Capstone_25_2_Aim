@@ -1,6 +1,7 @@
 package capstone25_2.aim.controller;
 
 import capstone25_2.aim.domain.dto.report.ReportDetailDTO;
+import capstone25_2.aim.domain.dto.report.ReportRequestDTO;
 import capstone25_2.aim.domain.dto.report.ReportResponseDTO;
 import capstone25_2.aim.domain.dto.report.TargetPriceTrendResponseDTO;
 import capstone25_2.aim.domain.entity.Report;
@@ -9,10 +10,9 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -60,5 +60,22 @@ public class ReportController {
         Report report = reportService.getReportById(reportId)
                 .orElseThrow(() -> new RuntimeException("Report not found"));
         return ReportDetailDTO.fromEntity(report);
+    }
+
+    // AI 모델로부터 리포트 데이터 저장
+    @PostMapping("/from-ai")
+    @Operation(
+            summary = "AI 모델로부터 리포트 저장",
+            description = "AI 모델이 분석한 리포트 데이터를 저장합니다. " +
+                    "Analyst 정보가 없으면 새로 생성하고, 있으면 기존 데이터를 사용합니다."
+    )
+    public ResponseEntity<ReportDetailDTO> saveReportFromAI(@RequestBody ReportRequestDTO requestDTO) {
+        try {
+            Report savedReport = reportService.saveReportFromAI(requestDTO);
+            ReportDetailDTO responseDTO = ReportDetailDTO.fromEntity(savedReport);
+            return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
     }
 }

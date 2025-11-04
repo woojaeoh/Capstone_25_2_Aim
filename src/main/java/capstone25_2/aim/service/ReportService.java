@@ -1,11 +1,17 @@
 package capstone25_2.aim.service;
 
+import capstone25_2.aim.domain.dto.report.ReportRequestDTO;
 import capstone25_2.aim.domain.dto.report.TargetPriceTrendDTO;
 import capstone25_2.aim.domain.dto.report.TargetPriceTrendResponseDTO;
+import capstone25_2.aim.domain.entity.Analyst;
 import capstone25_2.aim.domain.entity.Report;
+import capstone25_2.aim.domain.entity.Stock;
+import capstone25_2.aim.repository.AnalystRepository;
 import capstone25_2.aim.repository.ReportRepository;
+import capstone25_2.aim.repository.StockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -17,6 +23,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class ReportService {
     private final ReportRepository reportRepository;
+    private final AnalystRepository analystRepository;
+    private final StockRepository stockRepository;
 
     public List<Report> getReportsByStockId(Long stockId){
         return reportRepository.findByStockId(stockId);
@@ -107,5 +115,46 @@ public class ReportService {
         } else {
             return "0.00%";
         }
+    }
+
+    /**
+     * AI 모델로부터 받은 데이터를 저장
+     * 1. Analyst 먼저 저장 (없으면 새로 생성, 있으면 기존 사용)
+     * 2. Report 저장
+     */
+    @Transactional
+    public Report saveReportFromAI(ReportRequestDTO requestDTO) {
+        // 1. Analyst 조회 또는 생성
+        Analyst analyst = analystRepository
+                .findByAnalystNameAndFirmName(
+                        requestDTO.getAnalyst().getAnalystName(),
+                        requestDTO.getAnalyst().getFirmName()
+                )
+                .orElseGet(() -> {
+                    // 애널리스트가 없으면 새로 생성
+                    Analyst newAnalyst = new Analyst();
+                    newAnalyst.setAnalystName(requestDTO.getAnalyst().getAnalystName());
+                    newAnalyst.setFirmName(requestDTO.getAnalyst().getFirmName());
+                    return analystRepository.save(newAnalyst);
+                });
+
+        // 2. Stock 조회
+        Stock stock = stockRepository.findById(requestDTO.getStockId())
+                .orElseThrow(() -> new RuntimeException("Stock not found with id: " + requestDTO.getStockId()));
+
+        // 3. Report 생성 및 저장
+        Report report = new Report();
+        report.setReportTitle(requestDTO.getReport().getReportTitle());
+        report.setReportDate(requestDTO.getReport().getReportDate().atStartOfDay());
+        report.setTargetPrice(requestDTO.getReport().getTargetPrice());
+        report.setSurfaceOpinion(requestDTO.getReport().getSurfaceOpinion());
+        report.setHiddenOpinion(requestDTO.getReport().getHiddenOpinion());
+        report.setAnalyst(analyst);
+        report.setStock(stock);
+
+        // prevReport는 나중에 별도로 설정하는 로직이 필요할 수 있음
+        // 현재는 null로 설정
+
+        return reportRepository.save(report);
     }
 }
