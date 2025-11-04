@@ -62,18 +62,39 @@ public class ReportController {
         return ReportDetailDTO.fromEntity(report);
     }
 
-    // AI 모델로부터 리포트 데이터 저장
+    // AI 모델로부터 리포트 데이터 저장 (단일)
     @PostMapping("/from-ai")
     @Operation(
-            summary = "AI 모델로부터 리포트 저장",
+            summary = "AI 모델로부터 리포트 저장 (단일)",
             description = "AI 모델이 분석한 리포트 데이터를 저장합니다. " +
-                    "Analyst 정보가 없으면 새로 생성하고, 있으면 기존 데이터를 사용합니다."
+                    "Analyst 정보가 없으면 새로 생성하고, 있으면 기존 데이터를 사용합니다. " +
+                    "stockCode로 Stock을 조회하여 연결합니다."
     )
     public ResponseEntity<ReportDetailDTO> saveReportFromAI(@RequestBody ReportRequestDTO requestDTO) {
         try {
             Report savedReport = reportService.saveReportFromAI(requestDTO);
             ReportDetailDTO responseDTO = ReportDetailDTO.fromEntity(savedReport);
             return ResponseEntity.status(HttpStatus.CREATED).body(responseDTO);
+        } catch (RuntimeException e) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
+        }
+    }
+
+    // AI 모델로부터 리포트 데이터 배치 저장
+    @PostMapping("/batch")
+    @Operation(
+            summary = "AI 모델로부터 리포트 배치 저장",
+            description = "Python에서 DataFrame을 JSON 배열로 보내면 여러 개의 리포트를 한번에 저장합니다. " +
+                    "각 리포트마다 Analyst는 조회/생성하고, stockCode로 Stock을 찾아 연결합니다."
+    )
+    public ResponseEntity<List<ReportDetailDTO>> saveReportsFromAIBatch(
+            @RequestBody List<ReportRequestDTO> requestDTOList) {
+        try {
+            List<Report> savedReports = reportService.saveReportsFromAIBatch(requestDTOList);
+            List<ReportDetailDTO> responseDTOList = savedReports.stream()
+                    .map(ReportDetailDTO::fromEntity)
+                    .collect(java.util.stream.Collectors.toList());
+            return ResponseEntity.status(HttpStatus.CREATED).body(responseDTOList);
         } catch (RuntimeException e) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST).build();
         }

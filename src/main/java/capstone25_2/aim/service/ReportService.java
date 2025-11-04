@@ -120,7 +120,8 @@ public class ReportService {
     /**
      * AI 모델로부터 받은 데이터를 저장
      * 1. Analyst 먼저 저장 (없으면 새로 생성, 있으면 기존 사용)
-     * 2. Report 저장
+     * 2. stockCode로 Stock 조회
+     * 3. Report 저장
      */
     @Transactional
     public Report saveReportFromAI(ReportRequestDTO requestDTO) {
@@ -138,9 +139,9 @@ public class ReportService {
                     return analystRepository.save(newAnalyst);
                 });
 
-        // 2. Stock 조회
-        Stock stock = stockRepository.findById(requestDTO.getStockId())
-                .orElseThrow(() -> new RuntimeException("Stock not found with id: " + requestDTO.getStockId()));
+        // 2. Stock 조회 (stockCode로)
+        Stock stock = stockRepository.findByStockCode(requestDTO.getReport().getStockCode())
+                .orElseThrow(() -> new RuntimeException("Stock not found with code: " + requestDTO.getReport().getStockCode()));
 
         // 3. Report 생성 및 저장
         Report report = new Report();
@@ -150,11 +151,22 @@ public class ReportService {
         report.setSurfaceOpinion(requestDTO.getReport().getSurfaceOpinion());
         report.setHiddenOpinion(requestDTO.getReport().getHiddenOpinion());
         report.setAnalyst(analyst);
-        report.setStock(stock);
+        report.setStock(stock);  // JPA가 자동으로 stock_id FK 저장
 
         // prevReport는 나중에 별도로 설정하는 로직이 필요할 수 있음
         // 현재는 null로 설정
 
         return reportRepository.save(report);
+    }
+
+    /**
+     * 여러 개의 리포트를 한번에 저장 (배치 처리)
+     * Python에서 DataFrame을 JSON 배열로 보낼 때 사용
+     */
+    @Transactional
+    public List<Report> saveReportsFromAIBatch(List<ReportRequestDTO> requestDTOList) {
+        return requestDTOList.stream()
+                .map(this::saveReportFromAI)
+                .collect(Collectors.toList());
     }
 }

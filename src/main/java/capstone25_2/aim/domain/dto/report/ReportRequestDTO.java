@@ -29,6 +29,7 @@ public class ReportRequestDTO {
     @AllArgsConstructor
     @Builder
     public static class ReportInfo {
+        private String stockCode; // 종목코드 (예: "005930")
         private String reportTitle;
 
         @JsonFormat(pattern = "yyyy-MM-dd")
@@ -41,5 +42,4 @@ public class ReportRequestDTO {
 
     private AnalystInfo analyst;
     private ReportInfo report;
-    private Long stockId; // 어떤 종목에 대한 리포트인지
 }
