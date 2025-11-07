@@ -17,6 +17,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -25,6 +26,7 @@ public class ReportService {
     private final ReportRepository reportRepository;
     private final AnalystRepository analystRepository;
     private final StockRepository stockRepository;
+    private final AnalystMetricsService analystMetricsService;
 
     public List<Report> getReportsByStockId(Long stockId){
         return reportRepository.findByStockId(stockId);
@@ -122,9 +124,22 @@ public class ReportService {
      * 1. Analyst 먼저 저장 (없으면 새로 생성, 있으면 기존 사용)
      * 2. stockCode로 Stock 조회
      * 3. Report 저장
+     * 4. 애널리스트 정확도 자동 재계산
      */
     @Transactional
     public Report saveReportFromAI(ReportRequestDTO requestDTO) {
+        Report savedReport = saveReportWithoutMetricsUpdate(requestDTO);
+
+        // 리포트 저장 후 애널리스트 정확도 자동 재계산
+        analystMetricsService.calculateAndSaveAccuracyRate(savedReport.getAnalyst().getId());
+
+        return savedReport;
+    }
+
+    /**
+     * 리포트만 저장하고 메트릭 계산은 하지 않음 (내부용)
+     */
+    private Report saveReportWithoutMetricsUpdate(ReportRequestDTO requestDTO) {
         // 1. Analyst 조회 또는 생성
         Analyst analyst = analystRepository
                 .findByAnalystNameAndFirmName(
@@ -162,11 +177,23 @@ public class ReportService {
     /**
      * 여러 개의 리포트를 한번에 저장 (배치 처리)
      * Python에서 DataFrame을 JSON 배열로 보낼 때 사용
+     * 효율성을 위해 모든 리포트 저장 후 애널리스트별로 한 번씩만 정확도 계산
      */
     @Transactional
     public List<Report> saveReportsFromAIBatch(List<ReportRequestDTO> requestDTOList) {
-        return requestDTOList.stream()
-                .map(this::saveReportFromAI)
+        // 1. 모든 리포트 저장 (정확도 계산 없이)
+        List<Report> savedReports = requestDTOList.stream()
+                .map(this::saveReportWithoutMetricsUpdate)
                 .collect(Collectors.toList());
+
+        // 2. 저장된 리포트에 관련된 애널리스트 ID 중복 제거
+        Set<Long> analystIds = savedReports.stream()
+                .map(report -> report.getAnalyst().getId())
+                .collect(Collectors.toSet());
+
+        // 3. 각 애널리스트의 정확도를 한 번씩만 재계산
+        analystIds.forEach(analystMetricsService::calculateAndSaveAccuracyRate);
+
+        return savedReports;
     }
 }
