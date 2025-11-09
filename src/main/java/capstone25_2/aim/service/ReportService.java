@@ -138,6 +138,7 @@ public class ReportService {
 
     /**
      * 리포트만 저장하고 메트릭 계산은 하지 않음 (내부용)
+     * 중복 체크: 애널리스트 + 종목 + 리포트 날짜가 같으면 기존 리포트 반환
      */
     private Report saveReportWithoutMetricsUpdate(ReportRequestDTO requestDTO) {
         // 1. Analyst 조회 또는 생성
@@ -158,10 +159,23 @@ public class ReportService {
         Stock stock = stockRepository.findByStockCode(requestDTO.getReport().getStockCode())
                 .orElseThrow(() -> new RuntimeException("Stock not found with code: " + requestDTO.getReport().getStockCode()));
 
-        // 3. Report 생성 및 저장
+        // 3. 중복 체크: 애널리스트 + 종목 + 리포트 날짜로 기존 리포트 확인
+        LocalDateTime reportDate = requestDTO.getReport().getReportDate().atStartOfDay();
+        Optional<Report> existingReport = reportRepository.findByAnalystIdAndStockIdAndReportDate(
+                analyst.getId(),
+                stock.getId(),
+                reportDate
+        );
+
+        // 이미 존재하면 기존 리포트 반환 (중복 저장 방지)
+        if (existingReport.isPresent()) {
+            return existingReport.get();
+        }
+
+        // 4. Report 생성 및 저장
         Report report = new Report();
         report.setReportTitle(requestDTO.getReport().getReportTitle());
-        report.setReportDate(requestDTO.getReport().getReportDate().atStartOfDay());
+        report.setReportDate(reportDate);
         report.setTargetPrice(requestDTO.getReport().getTargetPrice());
         report.setSurfaceOpinion(requestDTO.getReport().getSurfaceOpinion());
         report.setHiddenOpinion(requestDTO.getReport().getHiddenOpinion());

@@ -26,4 +26,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     // 특정 애널리스트의 특정 종목에 대해 특정 날짜 이후 가장 가까운 리포트 조회 (의견 변화 감지용)
     Optional<Report> findFirstByAnalystIdAndStockIdAndReportDateAfterOrderByReportDateAsc(
             Long analystId, Long stockId, LocalDateTime afterDate);
+
+    // 중복 체크용: 애널리스트 + 종목 + 리포트 날짜로 기존 리포트 조회
+    Optional<Report> findByAnalystIdAndStockIdAndReportDate(Long analystId, Long stockId, LocalDateTime reportDate);
 }
