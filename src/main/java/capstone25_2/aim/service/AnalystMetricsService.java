@@ -5,6 +5,7 @@ import capstone25_2.aim.domain.dto.analyst.AnalystRankingResponseDTO;
 import capstone25_2.aim.domain.entity.AnalystMetrics;
 import capstone25_2.aim.domain.entity.ClosePrice;
 import capstone25_2.aim.domain.entity.Report;
+import capstone25_2.aim.domain.entity.SurfaceOpinion;
 import capstone25_2.aim.repository.AnalystMetricsRepository;
 import capstone25_2.aim.repository.AnalystRepository;
 import capstone25_2.aim.repository.ClosePriceRepository;
