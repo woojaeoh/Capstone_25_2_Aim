@@ -1,13 +1,14 @@
 package capstone25_2.aim.controller;
 
+import capstone25_2.aim.domain.dto.stock.StockConsensusDTO;
 import capstone25_2.aim.domain.dto.stock.StockResponseDTO;
 import capstone25_2.aim.domain.entity.Stock;
 import capstone25_2.aim.service.StockService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
-
 import java.util.List;
+import java.util.Optional;
 
 @RestController
 @RequestMapping("/stocks")
@@ -23,12 +24,20 @@ public class StockController {
                 .toList();
     }
 
-    // 종목 ID로 조회
+    // 종목 ID로 조회 (종합 의견 포함)
     @GetMapping("/{stockId}")
     public StockResponseDTO getStockById(@PathVariable Long stockId) {
         Stock stock = stockService.getStockById(stockId)
                 .orElseThrow(() -> new RuntimeException("Stock not found"));
-        return StockResponseDTO.fromEntity(stock);
+
+        // 종합 의견 조회 (리포트가 없으면 null)
+        Optional<StockConsensusDTO> consensus = stockService.getStockConsensusById(stockId);
+
+        if (consensus.isPresent()) {
+            return StockResponseDTO.fromEntityWithConsensus(stock, consensus.get());
+        } else {
+            return StockResponseDTO.fromEntity(stock);
+        }
     }
 
     // 종목 코드로 조회 (예: /stocks/code/005930)

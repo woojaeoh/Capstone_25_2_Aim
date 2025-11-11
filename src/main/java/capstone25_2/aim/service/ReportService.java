@@ -3,9 +3,11 @@ package capstone25_2.aim.service;
 import capstone25_2.aim.domain.dto.report.ReportRequestDTO;
 import capstone25_2.aim.domain.dto.report.TargetPriceTrendDTO;
 import capstone25_2.aim.domain.dto.report.TargetPriceTrendResponseDTO;
+import capstone25_2.aim.domain.dto.stock.StockConsensusDTO;
 import capstone25_2.aim.domain.entity.Analyst;
 import capstone25_2.aim.domain.entity.Report;
 import capstone25_2.aim.domain.entity.Stock;
+import capstone25_2.aim.domain.entity.SurfaceOpinion;
 import capstone25_2.aim.repository.AnalystRepository;
 import capstone25_2.aim.repository.ReportRepository;
 import capstone25_2.aim.repository.StockRepository;
@@ -15,9 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -82,6 +82,79 @@ public class ReportService {
                 .stockCode(firstReport.getStock().getStockCode())
                 .targetPriceTrend(trendList)
                 .reportCount(trendList.size())
+                .build();
+    }
+
+    /**
+     * 종목별 surfaceOpinion 종합 의견 조회
+     * 각 애널리스트의 최신 리포트 1개씩만 집계 (BUY, HOLD, SELL 개수)
+     */
+    public StockConsensusDTO getStockConsensus(Long stockId) {
+        // 1. 종목 조회
+        Stock stock = stockRepository.findById(stockId)
+                .orElseThrow(() -> new RuntimeException("Stock not found"));
+
+        // 2. 해당 종목의 최근 5년 리포트 조회
+        List<Report> recentReports = getRecentReportsByStockId(stockId);
+
+        if (recentReports.isEmpty()) {
+            throw new RuntimeException("No reports found for stock");
+        }
+
+        // 3. 애널리스트별로 그룹핑하고 각 애널리스트의 최신 리포트만 선택
+        Map<Long, Report> latestReportsByAnalyst = recentReports.stream()
+                .collect(Collectors.toMap(
+                        report -> report.getAnalyst().getId(),
+                        report -> report,
+                        (existing, replacement) ->
+                            existing.getReportDate().isAfter(replacement.getReportDate())
+                                ? existing : replacement
+                ));
+
+        // 4. 각 애널리스트의 최신 리포트만 추출
+        List<Report> latestReports = new ArrayList<>(latestReportsByAnalyst.values());
+
+        // 5. surfaceOpinion이 null이 아닌 것만 필터링
+        List<Report> validReports = latestReports.stream()
+                .filter(report -> report.getSurfaceOpinion() != null)
+                .collect(Collectors.toList());
+
+        if (validReports.isEmpty()) {
+            throw new RuntimeException("No valid surfaceOpinion data found");
+        }
+
+        // 6. surfaceOpinion 별 개수 계산
+        int buyCount = (int) validReports.stream()
+                .filter(report -> report.getSurfaceOpinion() == SurfaceOpinion.BUY)
+                .count();
+
+        int holdCount = (int) validReports.stream()
+                .filter(report -> report.getSurfaceOpinion() == SurfaceOpinion.HOLD)
+                .count();
+
+        int sellCount = (int) validReports.stream()
+                .filter(report -> report.getSurfaceOpinion() == SurfaceOpinion.SELL)
+                .count();
+
+        // 7. 평균 목표가 계산
+        Double averageTargetPrice = validReports.stream()
+                .map(Report::getTargetPrice)
+                .filter(Objects::nonNull)
+                .mapToInt(Integer::intValue)
+                .average()
+                .orElse(0.0);
+
+        // 8. DTO 생성 및 반환
+        return StockConsensusDTO.builder()
+                .stockId(stock.getId())
+                .stockName(stock.getStockName())
+                .stockCode(stock.getStockCode())
+                .buyCount(buyCount)
+                .holdCount(holdCount)
+                .sellCount(sellCount)
+                .averageTargetPrice(averageTargetPrice)
+                .totalReports(validReports.size())
+                .totalAnalysts(latestReportsByAnalyst.size())
                 .build();
     }
 

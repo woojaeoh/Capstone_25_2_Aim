@@ -4,6 +4,7 @@ import capstone25_2.aim.domain.dto.report.ReportDetailDTO;
 import capstone25_2.aim.domain.dto.report.ReportRequestDTO;
 import capstone25_2.aim.domain.dto.report.ReportResponseDTO;
 import capstone25_2.aim.domain.dto.report.TargetPriceTrendResponseDTO;
+import capstone25_2.aim.domain.dto.stock.StockConsensusDTO;
 import capstone25_2.aim.domain.entity.Report;
 import capstone25_2.aim.service.ReportService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -50,6 +51,14 @@ public class ReportController {
     public TargetPriceTrendResponseDTO getTargetPriceTrend(
             @Parameter(description = "종목 ID") @PathVariable Long stockId) {
         return reportService.getTargetPriceTrend(stockId);
+    }
+
+    // 종목별 surfaceOpinion 종합 의견 조회
+    @GetMapping("/stock/{stockId}/consensus")
+    @Operation(summary = "종목별 투자의견 종합 조회", description = "특정 종목에 대한 각 애널리스트의 최신 리포트를 기준으로 투자의견(BUY, HOLD, SELL) 통계를 집계합니다. 매수/보유/매도 의견 개수를 제공합니다.")
+    public StockConsensusDTO getStockConsensus(
+            @Parameter(description = "종목 ID") @PathVariable Long stockId) {
+        return reportService.getStockConsensus(stockId);
     }
 
     // 리포트 상세 조회

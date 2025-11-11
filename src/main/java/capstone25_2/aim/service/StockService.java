@@ -1,5 +1,6 @@
 package capstone25_2.aim.service;
 
+import capstone25_2.aim.domain.dto.stock.StockConsensusDTO;
 import capstone25_2.aim.domain.entity.Stock;
 import capstone25_2.aim.repository.StockRepository;
 import lombok.RequiredArgsConstructor;
@@ -13,6 +14,7 @@ import java.util.Optional;
 public class StockService {
 
     private final StockRepository stockRepository;
+    private final ReportService reportService;
 
     public List<Stock> getAllStocks() {
         return stockRepository.findAll();
@@ -27,6 +29,16 @@ public class StockService {
     //id는 내부 식별자
     public Optional<Stock> getStockById(Long id){
         return stockRepository.findById(id);
+    }
+
+    // 종목 ID로 조회 + 종합 의견 포함
+    public Optional<StockConsensusDTO> getStockConsensusById(Long id){
+        try {
+            return Optional.of(reportService.getStockConsensus(id));
+        } catch (RuntimeException e) {
+            // 리포트가 없거나 에러 발생 시 null 반환
+            return Optional.empty();
+        }
     }
 
     //키워드로 종목 검색 (종목명 또는 종목코드에서 검색)
