@@ -1,13 +1,19 @@
 package capstone25_2.aim.service;
 
+import capstone25_2.aim.domain.dto.report.TargetPriceTrendResponseDTO;
+import capstone25_2.aim.domain.dto.stock.ClosePriceTrendDTO;
 import capstone25_2.aim.domain.dto.stock.StockConsensusDTO;
+import capstone25_2.aim.domain.entity.ClosePrice;
 import capstone25_2.aim.domain.entity.Stock;
+import capstone25_2.aim.repository.ClosePriceRepository;
 import capstone25_2.aim.repository.StockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -15,6 +21,7 @@ public class StockService {
 
     private final StockRepository stockRepository;
     private final ReportService reportService;
+    private final ClosePriceRepository closePriceRepository;
 
     public List<Stock> getAllStocks() {
         return stockRepository.findAll();
@@ -63,5 +70,24 @@ public class StockService {
             return List.of();
         }
         return stockRepository.findBySector(sector);
+    }
+
+    // 종가 변동 추이 조회 (최근 5년)
+    public List<ClosePriceTrendDTO> getClosePriceTrend(Long stockId) {
+        LocalDate fiveYearsAgo = LocalDate.now().minusYears(5);
+        List<ClosePrice> closePrices = closePriceRepository
+                .findByStockIdAndTradeDateAfterOrderByTradeDateDesc(stockId, fiveYearsAgo);
+
+        return closePrices.stream()
+                .map(cp -> ClosePriceTrendDTO.builder()
+                        .tradeDate(cp.getTradeDate())
+                        .closePrice(cp.getClosePrice())
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    // 목표가 변동 추이 조회 (ReportService 위임)
+    public TargetPriceTrendResponseDTO getTargetPriceTrend(Long stockId) {
+        return reportService.getTargetPriceTrend(stockId);
     }
 }

@@ -45,22 +45,6 @@ public class ReportController {
                 .toList();
     }
 
-    // 종목별 목표가 변동 추이 데이터 조회
-    @GetMapping("/stock/{stockId}/target-price-trend")
-    @Operation(summary = "종목별 목표가 변동 추이 조회", description = "특정 종목의 최신 5년간 목표가 변동 추이를 그래프 데이터로 조회합니다. 직전 대비 목표가 변동률(+8.89%, -13.15% 형식)을 포함합니다.")
-    public TargetPriceTrendResponseDTO getTargetPriceTrend(
-            @Parameter(description = "종목 ID") @PathVariable Long stockId) {
-        return reportService.getTargetPriceTrend(stockId);
-    }
-
-    // 종목별 surfaceOpinion 종합 의견 조회
-    @GetMapping("/stock/{stockId}/consensus")
-    @Operation(summary = "종목별 투자의견 종합 조회", description = "특정 종목에 대한 각 애널리스트의 최신 리포트를 기준으로 투자의견(BUY, HOLD, SELL) 통계를 집계합니다. 매수/보유/매도 의견 개수를 제공합니다.")
-    public StockConsensusDTO getStockConsensus(
-            @Parameter(description = "종목 ID") @PathVariable Long stockId) {
-        return reportService.getStockConsensus(stockId);
-    }
-
     // 리포트 상세 조회
     @GetMapping("/{reportId}")
     @Operation(summary = "리포트 상세 조회", description = "특정 리포트의 상세 정보를 조회합니다.")

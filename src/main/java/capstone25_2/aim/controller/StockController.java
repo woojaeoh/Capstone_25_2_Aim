@@ -1,5 +1,7 @@
 package capstone25_2.aim.controller;
 
+import capstone25_2.aim.domain.dto.report.TargetPriceTrendResponseDTO;
+import capstone25_2.aim.domain.dto.stock.ClosePriceTrendDTO;
 import capstone25_2.aim.domain.dto.stock.StockConsensusDTO;
 import capstone25_2.aim.domain.dto.stock.StockResponseDTO;
 import capstone25_2.aim.domain.entity.Stock;
@@ -24,7 +26,7 @@ public class StockController {
                 .toList();
     }
 
-    // 종목 ID로 조회 (종합 의견 포함)
+    // 종목 ID로 조회 (종합 의견, 목표가 변동 추이, 종가 변동 추이 포함)
     @GetMapping("/{stockId}")
     public StockResponseDTO getStockById(@PathVariable Long stockId) {
         Stock stock = stockService.getStockById(stockId)
@@ -33,11 +35,24 @@ public class StockController {
         // 종합 의견 조회 (리포트가 없으면 null)
         Optional<StockConsensusDTO> consensus = stockService.getStockConsensusById(stockId);
 
-        if (consensus.isPresent()) {
-            return StockResponseDTO.fromEntityWithConsensus(stock, consensus.get());
-        } else {
-            return StockResponseDTO.fromEntity(stock);
+        // 목표가 변동 추이 조회
+        TargetPriceTrendResponseDTO targetPriceTrend = null;
+        try {
+            targetPriceTrend = stockService.getTargetPriceTrend(stockId);
+        } catch (RuntimeException e) {
+            // 리포트가 없으면 null
         }
+
+        // 종가 변동 추이 조회
+        List<ClosePriceTrendDTO> closePriceTrend = stockService.getClosePriceTrend(stockId);
+
+        // 모든 정보 포함하여 반환
+        return StockResponseDTO.fromEntityWithFullDetails(
+                stock,
+                consensus.orElse(null),
+                targetPriceTrend,
+                closePriceTrend
+        );
     }
 
     // 종목 코드로 조회 (예: /stocks/code/005930)
