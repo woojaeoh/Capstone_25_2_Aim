@@ -2,10 +2,7 @@ package capstone25_2.aim.service;
 
 import capstone25_2.aim.domain.dto.analyst.AnalystMetricsDTO;
 import capstone25_2.aim.domain.dto.analyst.AnalystRankingResponseDTO;
-import capstone25_2.aim.domain.entity.AnalystMetrics;
-import capstone25_2.aim.domain.entity.ClosePrice;
-import capstone25_2.aim.domain.entity.Report;
-import capstone25_2.aim.domain.entity.SurfaceOpinion;
+import capstone25_2.aim.domain.entity.*;;
 import capstone25_2.aim.repository.AnalystMetricsRepository;
 import capstone25_2.aim.repository.AnalystRepository;
 import capstone25_2.aim.repository.ClosePriceRepository;
@@ -249,13 +246,38 @@ public class AnalystMetricsService {
 
     /**
      * 리포트 이후 ~ 목표일 이전에 같은 종목에 대한 의견 변화가 있었는지 확인
+     * hiddenOpinion의 3단계 분류(BUY/HOLD/SELL)가 변경된 경우에만 의견 변화로 판단
      */
     private Optional<Report> findOpinionChangeBeforeTarget(Report originalReport, LocalDateTime targetDate) {
-        return reportRepository.findFirstByAnalystIdAndStockIdAndReportDateAfterOrderByReportDateAsc(
+        // 원본 리포트 이후의 모든 리포트를 시간순으로 조회
+        List<Report> laterReports = reportRepository.findByAnalystIdAndStockIdOrderByReportDateAsc(
                 originalReport.getAnalyst().getId(),
-                originalReport.getStock().getId(),
-                originalReport.getReportDate()
-        ).filter(nextReport -> nextReport.getReportDate().isBefore(targetDate));
+                originalReport.getStock().getId()
+        ).stream()
+                .filter(r -> r.getReportDate().isAfter(originalReport.getReportDate()))
+                .filter(r -> r.getReportDate().isBefore(targetDate))
+                .toList();
+
+        if (laterReports.isEmpty()) {
+            return Optional.empty();
+        }
+
+        // 원본 리포트의 의견 분류
+        String originalCategory = HiddenOpinionLabel.toSimpleCategory(originalReport.getHiddenOpinion());
+        String previousCategory = originalCategory;
+
+        // 시간순으로 순회하면서 의견 변화가 있는지 확인
+        for (Report laterReport : laterReports) {
+            String currentCategory = HiddenOpinionLabel.toSimpleCategory(laterReport.getHiddenOpinion());
+
+            // 이전 리포트와 의견이 다르면 의견 변화로 판단
+            if (!java.util.Objects.equals(previousCategory, currentCategory)) {
+                return Optional.of(laterReport);
+            }
+            previousCategory = currentCategory;
+        }
+
+        return Optional.empty();
     }
 
     /**

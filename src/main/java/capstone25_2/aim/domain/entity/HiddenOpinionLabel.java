@@ -32,4 +32,25 @@ public enum HiddenOpinionLabel {
             return STRONG_SELL;
         }
     }
+
+    /**
+     * hiddenOpinion을 3단계 의견(BUY, HOLD, SELL)으로 분류
+     * 의견 변화 감지용으로 사용
+     *
+     * @param score hiddenOpinion 값 (0.0 ~ 1.0)
+     * @return "BUY" (0.6 이상), "HOLD" (0.4 ~ 0.6), "SELL" (0.4 미만)
+     */
+    public static String toSimpleCategory(Double score) {
+        if (score == null) {
+            return null;
+        }
+
+        if (score >= 0.6) {
+            return "BUY";
+        } else if (score >= 0.4) {
+            return "HOLD";
+        } else {
+            return "SELL";
+        }
+    }
 }

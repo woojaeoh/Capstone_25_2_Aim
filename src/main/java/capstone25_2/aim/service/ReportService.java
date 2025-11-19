@@ -4,11 +4,9 @@ import capstone25_2.aim.domain.dto.report.ReportRequestDTO;
 import capstone25_2.aim.domain.dto.report.TargetPriceTrendDTO;
 import capstone25_2.aim.domain.dto.report.TargetPriceTrendResponseDTO;
 import capstone25_2.aim.domain.dto.stock.StockConsensusDTO;
-import capstone25_2.aim.domain.entity.Analyst;
-import capstone25_2.aim.domain.entity.Report;
-import capstone25_2.aim.domain.entity.Stock;
-import capstone25_2.aim.domain.entity.SurfaceOpinion;
+import capstone25_2.aim.domain.entity.*;
 import capstone25_2.aim.repository.AnalystRepository;
+import capstone25_2.aim.repository.ClosePriceRepository;
 import capstone25_2.aim.repository.ReportRepository;
 import capstone25_2.aim.repository.StockRepository;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +24,7 @@ public class ReportService {
     private final ReportRepository reportRepository;
     private final AnalystRepository analystRepository;
     private final StockRepository stockRepository;
+    private final ClosePriceRepository closePriceRepository;
     private final AnalystMetricsService analystMetricsService;
 
     public List<Report> getReportsByStockId(Long stockId){
@@ -87,7 +86,8 @@ public class ReportService {
 
     /**
      * 종목별 surfaceOpinion 종합 의견 조회
-     * 각 애널리스트의 최신 리포트 1개씩만 집계 (BUY, HOLD, SELL 개수)
+     * 각 애널리스트의 의견 변화 이후 최신 리포트만 집계 (BUY, HOLD, SELL 개수)
+     * 의견 변화가 없으면 최근 5년 리포트 중 최신 리포트 사용
      */
     public StockConsensusDTO getStockConsensus(Long stockId) {
         // 1. 종목 조회
@@ -101,21 +101,40 @@ public class ReportService {
             throw new RuntimeException("No reports found for stock");
         }
 
-        // 3. 애널리스트별로 그룹핑하고 각 애널리스트의 최신 리포트만 선택
-        Map<Long, Report> latestReportsByAnalyst = recentReports.stream()
-                .collect(Collectors.toMap(
-                        report -> report.getAnalyst().getId(),
-                        report -> report,
-                        (existing, replacement) ->
-                            existing.getReportDate().isAfter(replacement.getReportDate())
-                                ? existing : replacement
-                ));
+        // 3. 애널리스트별로 그룹핑
+        Map<Long, List<Report>> reportsByAnalyst = recentReports.stream()
+                .collect(Collectors.groupingBy(report -> report.getAnalyst().getId()));
 
-        // 4. 각 애널리스트의 최신 리포트만 추출
-        List<Report> latestReports = new ArrayList<>(latestReportsByAnalyst.values());
+        // 4. 각 애널리스트의 의견 변화 이후 최신 리포트만 선택
+        List<Report> validReportsAfterOpinionChange = new ArrayList<>();
+
+        for (Map.Entry<Long, List<Report>> entry : reportsByAnalyst.entrySet()) {
+            List<Report> analystReports = entry.getValue();
+
+            // 날짜순 정렬 (오래된 것부터)
+            analystReports.sort(Comparator.comparing(Report::getReportDate));
+
+            // 마지막 의견 변화 시점 찾기
+            int lastChangeIndex = 0;
+            String previousCategory = null;
+
+            for (int i = 0; i < analystReports.size(); i++) {
+                String currentCategory = HiddenOpinionLabel.toSimpleCategory(
+                        analystReports.get(i).getHiddenOpinion());
+
+                if (previousCategory != null && !Objects.equals(previousCategory, currentCategory)) {
+                    lastChangeIndex = i;  // 의견 변화 발생
+                }
+                previousCategory = currentCategory;
+            }
+
+            // 의견 변화 이후의 가장 최신 리포트 선택
+            Report latestValidReport = analystReports.get(analystReports.size() - 1);
+            validReportsAfterOpinionChange.add(latestValidReport);
+        }
 
         // 5. surfaceOpinion이 null이 아닌 것만 필터링
-        List<Report> validReports = latestReports.stream()
+        List<Report> validReports = validReportsAfterOpinionChange.stream()
                 .filter(report -> report.getSurfaceOpinion() != null)
                 .collect(Collectors.toList());
 
@@ -144,7 +163,19 @@ public class ReportService {
                 .average()
                 .orElse(0.0);
 
-        // 8. DTO 생성 및 반환
+        // 8. 현재 종가 조회 및 상승 여력 계산
+        Double upsidePotential = null;
+        List<ClosePrice> closePrices = closePriceRepository.findByStockIdOrderByTradeDateDesc(stockId);
+        if (!closePrices.isEmpty() && averageTargetPrice > 0) {
+            Integer currentClosePrice = closePrices.get(0).getClosePrice();
+            if (currentClosePrice != null && currentClosePrice > 0) {
+                upsidePotential = ((averageTargetPrice - currentClosePrice) / currentClosePrice) * 100;
+                // 소수점 둘째자리까지 반올림
+                upsidePotential = Math.round(upsidePotential * 100.0) / 100.0;
+            }
+        }
+
+        // 9. DTO 생성 및 반환
         return StockConsensusDTO.builder()
                 .stockId(stock.getId())
                 .stockName(stock.getStockName())
@@ -153,8 +184,9 @@ public class ReportService {
                 .holdCount(holdCount)
                 .sellCount(sellCount)
                 .averageTargetPrice(averageTargetPrice)
+                .upsidePotential(upsidePotential)
                 .totalReports(validReports.size())
-                .totalAnalysts(latestReportsByAnalyst.size())
+                .totalAnalysts(reportsByAnalyst.size())
                 .build();
     }
 

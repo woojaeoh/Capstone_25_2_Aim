@@ -18,8 +18,11 @@ public class StockConsensusDTO {
     private Integer sellCount;             // 매도 의견 수
 
     // 목표가 통계
-    private Double averageTargetPrice;     // 평균 목표가 (각 애널리스트 최신 리포트 기준)
+    private Double averageTargetPrice;     // 평균 목표가 (의견 변화 이후 리포트 기준)
 
-    private Integer totalReports;          // 집계된 리포트 개수 (애널리스트별 최신 리포트)
+    // 상승 여력
+    private Double upsidePotential;        // 상승 여력 (%) = (평균 목표가 - 현재 종가) / 현재 종가 * 100
+
+    private Integer totalReports;          // 집계된 리포트 개수 (의견 변화 이후 리포트)
     private Integer totalAnalysts;         // 총 애널리스트 수
 }
