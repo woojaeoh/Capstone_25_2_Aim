@@ -1,5 +1,6 @@
 package capstone25_2.aim.domain.dto.report;
 
+import capstone25_2.aim.domain.entity.HiddenOpinionLabel;
 import capstone25_2.aim.domain.entity.SurfaceOpinion;
 import capstone25_2.aim.domain.entity.Report;
 import lombok.*;
@@ -19,6 +20,7 @@ public class ReportResponseDTO {
     private SurfaceOpinion surfaceOpinion;
     private Integer targetPrice;
     private Double hiddenOpinion;
+    private HiddenOpinionLabel hiddenOpinionLabel;
     private Long prevReportId;
 
 
@@ -32,6 +34,7 @@ public class ReportResponseDTO {
                 .surfaceOpinion(report.getSurfaceOpinion())
                 .targetPrice(report.getTargetPrice())
                 .hiddenOpinion(report.getHiddenOpinion())
+                .hiddenOpinionLabel(HiddenOpinionLabel.fromScore(report.getHiddenOpinion()))
                 .prevReportId(report.getPrevReport() != null ? report.getPrevReport().getId() : null)
                 .build();
     }

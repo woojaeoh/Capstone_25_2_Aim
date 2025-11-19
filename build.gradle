@@ -41,6 +41,9 @@ dependencies {
 	// Swagger UI (API 문서 자동화용)
 	implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
 
+	// OpenCSV (CSV 파일 파싱용)
+	implementation 'com.opencsv:opencsv:5.9'
+
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
 }
