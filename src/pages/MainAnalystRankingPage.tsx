@@ -155,6 +155,7 @@ export const MainAnalystRankingPage = () => {
             name={analyst.name}
             firm={analyst.firm}
             rank={analyst.rank}
+            sectors={analyst.sectors}
             accuracy={analyst.metrics.accuracy}
             avgReturn={analyst.metrics.avgReturn}
             targetError={analyst.metrics.targetError}

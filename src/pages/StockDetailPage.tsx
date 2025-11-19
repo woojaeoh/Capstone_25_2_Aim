@@ -123,20 +123,22 @@ export const StockDetailPage = () => {
     {
       id: 1,
       name: '김애널리스트',
-      affiliation: '삼성증권',
+      firm: '삼성증권',
+      sectors: ['IT/전자', '반도체'],
       accuracy: 85.5,
       avgReturn: 12.3,
-      targetPriceError: 5.2,
-      score: 92,
+      targetError: 5.2,
+      compositeScore: 92,
     },
     {
       id: 2,
       name: '이애널리스트',
-      affiliation: 'KB증권',
+      firm: 'KB증권',
+      sectors: ['IT/전자', '디스플레이'],
       accuracy: 82.1,
       avgReturn: 10.8,
-      targetPriceError: 6.5,
-      score: 88,
+      targetError: 6.5,
+      compositeScore: 88,
     },
   ];
 
@@ -201,11 +203,12 @@ export const StockDetailPage = () => {
             <AnalystCard
               key={analyst.id}
               name={analyst.name}
-              affiliation={analyst.affiliation}
+              firm={analyst.firm}
+              sectors={analyst.sectors}
               accuracy={analyst.accuracy}
               avgReturn={analyst.avgReturn}
-              targetPriceError={analyst.targetPriceError}
-              score={analyst.score}
+              targetError={analyst.targetError}
+              compositeScore={analyst.compositeScore}
             />
           ))}
         </AnalystList>

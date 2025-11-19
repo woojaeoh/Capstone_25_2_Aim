@@ -5,6 +5,7 @@ type AnalystCardProps = {
   name: string;
   firm: string;
   rank?: number;
+  sectors: string[];
   accuracy: number;
   avgReturn: number;
   targetError: number;
@@ -49,6 +50,22 @@ const Firm = styled.p`
   margin: 0;
   font-size: 14px;
   color: #666;
+`;
+
+const TagContainer = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+`;
+
+const Tag = styled.span`
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  background-color: #f1f5f9;
+  color: #475569;
+  font-weight: 500;
 `;
 
 const RankBadge = styled.div`
@@ -107,6 +124,7 @@ export const AnalystCard: React.FC<AnalystCardProps> = ({
   name,
   firm,
   rank,
+  sectors,
   accuracy,
   avgReturn,
   targetError,
@@ -119,6 +137,13 @@ export const AnalystCard: React.FC<AnalystCardProps> = ({
         <NameSection>
           <Name>{name}</Name>
           <Firm>{firm}</Firm>
+          {sectors.length > 0 && (
+            <TagContainer>
+              {sectors.map((sector, index) => (
+                <Tag key={index}>{sector}</Tag>
+              ))}
+            </TagContainer>
+          )}
         </NameSection>
         {rank && <RankBadge>#{rank}</RankBadge>}
       </Header>
@@ -152,6 +177,7 @@ export const AnalystCard: React.FC<AnalystCardProps> = ({
   name="김애널리스트"
   firm="삼성증권"
   rank={1}
+  sectors={['IT/전자', '반도체']}
   accuracy={85.5}
   avgReturn={12.3}
   targetError={5.2}
