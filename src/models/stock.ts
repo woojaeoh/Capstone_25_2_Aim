@@ -38,3 +38,12 @@ export type StockDetailPageData = {
   coveringAnalysts: AnalystRankingEntry[];
 };
 
+// 종목 랭킹에 사용될 엔트리 타입
+export type StockRankingEntry = {
+  ticker: string;
+  name: string;
+  sector: string;
+  upside: number;   // 상승 여력 (%)
+  buyRatio: number; // 매수 의견 비율 (%)
+};
+
