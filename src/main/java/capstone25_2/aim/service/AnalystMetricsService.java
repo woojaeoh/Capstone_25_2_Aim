@@ -2,7 +2,7 @@ package capstone25_2.aim.service;
 
 import capstone25_2.aim.domain.dto.analyst.AnalystMetricsDTO;
 import capstone25_2.aim.domain.dto.analyst.AnalystRankingResponseDTO;
-import capstone25_2.aim.domain.entity.*;;
+import capstone25_2.aim.domain.entity.*;
 import capstone25_2.aim.repository.AnalystMetricsRepository;
 import capstone25_2.aim.repository.AnalystRepository;
 import capstone25_2.aim.repository.ClosePriceRepository;
@@ -89,6 +89,8 @@ public class AnalystMetricsService {
         double totalTargetDiff = 0.0;
         int targetDiffCount = 0; // 목표가 오차율 계산 가능한 리포트 수
 
+        // 상대적 성과 계산 (임시 비활성화 - 성능 최적화)
+        // TODO: 성능 개선 후 다시 활성화
         double totalReturnDiff = 0.0; // 종목별 평균 대비 수익률 차이 누적
         int returnDiffCount = 0;
         double totalTargetDiffDiff = 0.0; // 종목별 평균 대비 목표가 오차율 차이 누적
@@ -109,23 +111,24 @@ public class AnalystMetricsService {
                     targetDiffCount++;
                 }
 
+                // 상대적 성과 계산 비활성화 (성능 최적화)
                 // 해당 종목에 대한 모든 애널리스트들의 평균 계산 (자기 포함)
-                StockAverageMetrics stockAvg = calculateStockAverageMetrics(
-                    report.getStock().getId(),
-                    fiveYearsAgo
-                );
-
-                // 수익률 차이 계산
-                if (stockAvg.averageReturn != null) {
-                    totalReturnDiff += (result.returnRate - stockAvg.averageReturn);
-                    returnDiffCount++;
-                }
-
-                // 목표가 오차율 차이 계산 (의견 일치 케이스만)
-                if (result.targetDiffRate != null && stockAvg.averageTargetDiff != null) {
-                    totalTargetDiffDiff += (result.targetDiffRate - stockAvg.averageTargetDiff);
-                    targetDiffDiffCount++;
-                }
+                // StockAverageMetrics stockAvg = calculateStockAverageMetrics(
+                //     report.getStock().getId(),
+                //     fiveYearsAgo
+                // );
+                //
+                // // 수익률 차이 계산
+                // if (stockAvg.averageReturn != null) {
+                //     totalReturnDiff += (result.returnRate - stockAvg.averageReturn);
+                //     returnDiffCount++;
+                // }
+                //
+                // // 목표가 오차율 차이 계산 (의견 일치 케이스만)
+                // if (result.targetDiffRate != null && stockAvg.averageTargetDiff != null) {
+                //     totalTargetDiffDiff += (result.targetDiffRate - stockAvg.averageTargetDiff);
+                //     targetDiffDiffCount++;
+                // }
             }
         }
 
@@ -281,28 +284,46 @@ public class AnalystMetricsService {
     }
 
     /**
-     * hiddenOpinion과 실제 주가 변동이 일치하는지 판단
-     * hiddenOpinion: 0.0 ~ 1.0 (0에 가까울수록 하락, 1에 가까울수록 상승)
+     * hiddenOpinion과 실제 주가 변동이 일치하는지 3단계로 판단
+     *
+     * 예측 분류 (3단계):
+     * - BUY: hiddenOpinion >= 0.75
+     * - HOLD: 0.4 <= hiddenOpinion < 0.75
+     * - SELL: hiddenOpinion < 0.4
+     *
+     * 실제 결과 분류 (목표가 기준):
+     * - BUY: 1년 후 실제 주가 >= 목표가
+     * - HOLD: 목표가 * 0.9 <= 실제 주가 < 목표가 (목표가 ±10% 범위)
+     * - SELL: 실제 주가 < 목표가 * 0.9
      *
      * @param hiddenOpinion 숨겨진 의견 (0.0 ~ 1.0)
      * @param targetPrice 목표가
-     * @param actualPrice 실제 주가
-     * @return 의견이 맞았는지 여부
+     * @param actualPrice 1년 후 실제 주가
+     * @return 예측과 실제가 일치하는지 여부
      */
     private boolean isOpinionCorrect(Double hiddenOpinion, Integer targetPrice, Integer actualPrice) {
-        if (hiddenOpinion == null || targetPrice == null || actualPrice == null) {
+        if (hiddenOpinion == null || targetPrice == null || actualPrice == null || targetPrice == 0) {
             return false;
         }
 
-        // 목표가 대비 실제 주가 달성률
-        boolean priceIncreased = actualPrice >= targetPrice; // 실제로 목표가 이상 달성했는지
-        boolean priceDecreased = actualPrice < targetPrice; // 실제로 목표가 미달성했는지
+        // 1. 예측을 3단계로 분류 (BUY/HOLD/SELL)
+        String predictedCategory = HiddenOpinionLabel.toSimpleCategory(hiddenOpinion);
+        if (predictedCategory == null) {
+            return false;
+        }
 
-        // hiddenOpinion 해석: 0.5 기준으로 상승/하락 판단
-        boolean predictedIncrease = hiddenOpinion >= 0.5;
+        // 2. 실제 주가를 3단계로 분류 (목표가 기준)
+        String actualCategory;
+        if (actualPrice >= targetPrice) {
+            actualCategory = "BUY";  // 목표가 이상 달성
+        } else if (actualPrice >= targetPrice * 0.9) {
+            actualCategory = "HOLD";  // 목표가 90% ~ 100% 사이 (±10% 범위)
+        } else {
+            actualCategory = "SELL";  // 목표가 90% 미달
+        }
 
-        // 예측과 실제가 일치하면 정답
-        return (predictedIncrease && priceIncreased) || (!predictedIncrease && priceDecreased);
+        // 3. 예측과 실제가 일치하면 정답
+        return predictedCategory.equals(actualCategory);
     }
 
     /**

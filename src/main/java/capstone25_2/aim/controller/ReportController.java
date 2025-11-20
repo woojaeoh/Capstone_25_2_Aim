@@ -25,7 +25,9 @@ import java.io.InputStreamReader;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/reports")
@@ -108,7 +110,8 @@ public class ReportController {
     @Operation(
             summary = "CSV 파일로 리포트 배치 저장",
             description = "CSV 파일을 업로드하여 여러 개의 리포트를 한번에 저장합니다. " +
-                    "CSV 컬럼: analystName, firmName, stockCode, reportTitle, reportDate, targetPrice, surfaceOpinion, hiddenOpinion"
+                    "CSV 컬럼 순서: analystName, firmName, hiddenOpinion, reportDate, reportTitle, stockCode, surfaceOpinion, targetPrice. " +
+                    "예외 처리: 컬럼이 하나라도 비어있거나, analystName이 4글자 이상이면 해당 행은 스킵됩니다."
     )
     public ResponseEntity<?> uploadCsvReports(
             @Parameter(description = "CSV 파일") @RequestParam("file") MultipartFile file) {
@@ -136,17 +139,74 @@ public class ReportController {
 
             return ResponseEntity.status(HttpStatus.CREATED).body(responseDTOList);
         } catch (IOException | CsvException e) {
+            e.printStackTrace();  // 콘솔에 스택 트레이스 출력
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("CSV 파일 파싱 오류: " + e.getMessage());
         } catch (RuntimeException e) {
+            System.err.println("=== 데이터 저장 오류 발생 ===");
+            e.printStackTrace();  // 콘솔에 스택 트레이스 출력
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("데이터 저장 오류: " + e.getMessage());
         }
     }
 
+    // prevReport 일괄 설정 (데이터 업로드 후 실행)
+    @PostMapping("/update-prev-reports")
+    @Operation(
+            summary = "모든 리포트의 prevReport 일괄 설정",
+            description = "DB에 저장된 모든 리포트의 prevReport를 일괄 설정합니다. " +
+                    "같은 애널리스트 + 같은 종목의 직전 리포트를 찾아서 FK 매핑합니다. " +
+                    "대량 데이터 업로드 후 실행해야 합니다."
+    )
+    public ResponseEntity<Map<String, Object>> updateAllPrevReports() {
+        try {
+            int updatedCount = reportService.updateAllPrevReports();
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("updatedCount", updatedCount);
+            response.put("message", "prevReport 설정 완료: " + updatedCount + "개 업데이트됨");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "prevReport 설정 오류: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
+    // 애널리스트 지표 일괄 계산 (데이터 업로드 후 실행)
+    @PostMapping("/calculate-analyst-metrics")
+    @Operation(
+            summary = "모든 애널리스트 지표 일괄 계산",
+            description = "DB에 저장된 모든 애널리스트의 정확도 지표를 일괄 계산합니다. " +
+                    "대량 데이터 업로드 후 실행해야 합니다. " +
+                    "애널리스트가 많을 경우 시간이 오래 걸릴 수 있습니다."
+    )
+    public ResponseEntity<Map<String, Object>> calculateAllAnalystMetrics() {
+        try {
+            int calculatedCount = reportService.calculateAllAnalystMetrics();
+            Map<String, Object> response = new HashMap<>();
+            response.put("success", true);
+            response.put("calculatedCount", calculatedCount);
+            response.put("message", "애널리스트 지표 계산 완료: " + calculatedCount + "명");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            e.printStackTrace();
+            Map<String, Object> errorResponse = new HashMap<>();
+            errorResponse.put("success", false);
+            errorResponse.put("message", "지표 계산 오류: " + e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
+        }
+    }
+
     /**
      * CSV 파일을 파싱하여 ReportRequestDTO 리스트로 변환
-     * CSV 컬럼 순서: analystName, firmName, stockCode, reportTitle, reportDate, targetPrice, surfaceOpinion, hiddenOpinion
+     * CSV 컬럼 순서: analystName, firmName, hiddenOpinion, reportDate, reportTitle, stockCode, surfaceOpinion, targetPrice
+     *
+     * 예외 처리:
+     * - 컬럼이 하나라도 비어있으면 스킵
+     * - analystName이 4글자 이상이면 스킵
      */
     private List<ReportRequestDTO> parseCsvToReportRequestDTOList(MultipartFile file)
             throws IOException, CsvException {
@@ -161,33 +221,61 @@ public class ReportController {
             for (int i = 1; i < rows.size(); i++) {
                 String[] row = rows.get(i);
 
+                // 컬럼 수가 8개가 아니면 스킵
                 if (row.length < 8) {
-                    continue; // 컬럼 수가 부족하면 스킵
+                    continue;
                 }
 
-                // AnalystInfo 생성
-                ReportRequestDTO.AnalystInfo analystInfo = ReportRequestDTO.AnalystInfo.builder()
-                        .analystName(row[0].trim())
-                        .firmName(row[1].trim())
-                        .build();
+                try {
+                    // 각 컬럼 값 추출 및 trim
+                    String analystName = row[0].trim();
+                    String firmName = row[1].trim();
+                    String hiddenOpinionStr = row[2].trim();
+                    String reportDateStr = row[3].trim();
+                    String reportTitle = row[4].trim();
+                    String stockCode = row[5].trim();
+                    String surfaceOpinionStr = row[6].trim();
+                    String targetPriceStr = row[7].trim();
 
-                // ReportInfo 생성
-                ReportRequestDTO.ReportInfo reportInfo = ReportRequestDTO.ReportInfo.builder()
-                        .stockCode(row[2].trim())
-                        .reportTitle(row[3].trim())
-                        .reportDate(LocalDate.parse(row[4].trim(), dateFormatter))
-                        .targetPrice(Integer.parseInt(row[5].trim()))
-                        .surfaceOpinion(SurfaceOpinion.valueOf(row[6].trim().toUpperCase()))
-                        .hiddenOpinion(Double.parseDouble(row[7].trim()))
-                        .build();
+                    // 컬럼이 하나라도 비어있으면 스킵
+                    if (analystName.isEmpty() || firmName.isEmpty() || hiddenOpinionStr.isEmpty() ||
+                            reportDateStr.isEmpty() || reportTitle.isEmpty() || stockCode.isEmpty() ||
+                            surfaceOpinionStr.isEmpty() || targetPriceStr.isEmpty()) {
+                        continue;
+                    }
 
-                // ReportRequestDTO 생성
-                ReportRequestDTO requestDTO = ReportRequestDTO.builder()
-                        .analyst(analystInfo)
-                        .report(reportInfo)
-                        .build();
+                    // analystName이 4글자 이상이면 스킵
+                    if (analystName.length() >= 4) {
+                        continue;
+                    }
 
-                result.add(requestDTO);
+                    // AnalystInfo 생성
+                    ReportRequestDTO.AnalystInfo analystInfo = ReportRequestDTO.AnalystInfo.builder()
+                            .analystName(analystName)
+                            .firmName(firmName)
+                            .build();
+
+                    // ReportInfo 생성
+                    ReportRequestDTO.ReportInfo reportInfo = ReportRequestDTO.ReportInfo.builder()
+                            .stockCode(stockCode)
+                            .reportTitle(reportTitle)
+                            .reportDate(LocalDate.parse(reportDateStr, dateFormatter))
+                            .targetPrice(Integer.parseInt(targetPriceStr))
+                            .surfaceOpinion(SurfaceOpinion.valueOf(surfaceOpinionStr.toUpperCase()))
+                            .hiddenOpinion(Double.parseDouble(hiddenOpinionStr))
+                            .build();
+
+                    // ReportRequestDTO 생성
+                    ReportRequestDTO requestDTO = ReportRequestDTO.builder()
+                            .analyst(analystInfo)
+                            .report(reportInfo)
+                            .build();
+
+                    result.add(requestDTO);
+                } catch (Exception e) {
+                    // 파싱 오류 발생 시 해당 행 스킵 (예: 날짜 형식 오류, 숫자 변환 오류 등)
+                    continue;
+                }
             }
         }
 

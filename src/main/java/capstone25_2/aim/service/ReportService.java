@@ -303,22 +303,186 @@ public class ReportService {
      * 여러 개의 리포트를 한번에 저장 (배치 처리)
      * Python에서 DataFrame을 JSON 배열로 보낼 때 사용
      * 효율성을 위해 모든 리포트 저장 후 애널리스트별로 한 번씩만 정확도 계산
+     * 배치 처리 중 애널리스트 캐시를 사용하여 중복 조회 방지
      */
     @Transactional
     public List<Report> saveReportsFromAIBatch(List<ReportRequestDTO> requestDTOList) {
-        // 1. 모든 리포트 저장 (정확도 계산 없이)
-        List<Report> savedReports = requestDTOList.stream()
-                .map(this::saveReportWithoutMetricsUpdate)
-                .collect(Collectors.toList());
+        // 1. 애널리스트 캐시 생성 (배치 처리 중 중복 조회 방지)
+        Map<String, Analyst> analystCache = new HashMap<>();
 
-        // 2. 저장된 리포트에 관련된 애널리스트 ID 중복 제거
+        // 2. 모든 리포트 객체 생성 (아직 DB에 저장하지 않음)
+        List<Report> reportsToSave = new ArrayList<>();
+        for (ReportRequestDTO requestDTO : requestDTOList) {
+            Report report = saveReportWithCache(requestDTO, analystCache);
+            if (report != null) {  // null이면 스킵된 것
+                reportsToSave.add(report);
+            }
+        }
+
+        System.out.println("📦 Batch Insert 시작: " + reportsToSave.size() + "개 리포트");
+
+        // 3. Batch Insert - 한 번에 저장 (대폭 성능 향상)
+        List<Report> savedReports = reportRepository.saveAll(reportsToSave);
+
+        System.out.println("✅ Batch Insert 완료: " + savedReports.size() + "개 저장됨");
+
+        // 4. 저장된 리포트에 관련된 애널리스트 ID 중복 제거
         Set<Long> analystIds = savedReports.stream()
                 .map(report -> report.getAnalyst().getId())
                 .collect(Collectors.toSet());
 
-        // 3. 각 애널리스트의 정확도를 한 번씩만 재계산
-        analystIds.forEach(analystMetricsService::calculateAndSaveAccuracyRate);
+        // 4. 각 애널리스트의 정확도를 한 번씩만 재계산 (임시 비활성화)
+        // TODO: 데이터 저장 완료 후 별도 API로 실행
+        // analystIds.forEach(analystMetricsService::calculateAndSaveAccuracyRate);
+        System.out.println("⚠️ 지표 계산 스킵 (성능 최적화). 저장된 리포트: " + savedReports.size()
+            + "개, 애널리스트: " + analystIds.size() + "명");
 
         return savedReports;
+    }
+
+    /**
+     * 애널리스트 캐시를 사용하여 리포트 저장 (배치 처리용)
+     */
+    private Report saveReportWithCache(ReportRequestDTO requestDTO, Map<String, Analyst> analystCache) {
+        System.out.println("=== 리포트 저장 시작: " + requestDTO.getReport().getReportTitle());
+
+        // 1. 캐시에서 Analyst 조회 (analystName + firmName을 키로 사용)
+        String cacheKey = requestDTO.getAnalyst().getAnalystName() + "|" + requestDTO.getAnalyst().getFirmName();
+        System.out.println("캐시 키: " + cacheKey);
+
+        Analyst analyst = analystCache.computeIfAbsent(cacheKey, key -> {
+            // 캐시에 없으면 DB에서 조회 또는 생성
+            return analystRepository
+                    .findByAnalystNameAndFirmName(
+                            requestDTO.getAnalyst().getAnalystName(),
+                            requestDTO.getAnalyst().getFirmName()
+                    )
+                    .orElseGet(() -> {
+                        // 애널리스트가 없으면 새로 생성
+                        Analyst newAnalyst = new Analyst();
+                        newAnalyst.setAnalystName(requestDTO.getAnalyst().getAnalystName());
+                        newAnalyst.setFirmName(requestDTO.getAnalyst().getFirmName());
+                        return analystRepository.save(newAnalyst);
+                    });
+        });
+
+        // 2. Stock 조회 (stockCode로) - DB에 없으면 스킵
+        Optional<Stock> stockOpt = stockRepository.findByStockCode(requestDTO.getReport().getStockCode());
+        if (stockOpt.isEmpty()) {
+            System.err.println("⚠️ Stock을 찾을 수 없어 스킵: stockCode=" + requestDTO.getReport().getStockCode()
+                + ", 리포트=" + requestDTO.getReport().getReportTitle());
+            return null;  // 해당 리포트 스킵
+        }
+        Stock stock = stockOpt.get();
+
+        // 3. 중복 체크: 애널리스트 + 종목 + 리포트 날짜로 기존 리포트 확인
+        LocalDateTime reportDate = requestDTO.getReport().getReportDate().atStartOfDay();
+        Optional<Report> existingReport = reportRepository.findByAnalystIdAndStockIdAndReportDate(
+                analyst.getId(),
+                stock.getId(),
+                reportDate
+        );
+
+        // 이미 존재하면 기존 리포트 반환 (중복 저장 방지)
+        if (existingReport.isPresent()) {
+            return existingReport.get();
+        }
+
+        // 4. Report 생성 및 저장
+        Report report = new Report();
+        report.setReportTitle(requestDTO.getReport().getReportTitle());
+        report.setReportDate(reportDate);
+        report.setTargetPrice(requestDTO.getReport().getTargetPrice());
+        report.setSurfaceOpinion(requestDTO.getReport().getSurfaceOpinion());
+        report.setHiddenOpinion(requestDTO.getReport().getHiddenOpinion());
+        report.setAnalyst(analyst);
+        report.setStock(stock);
+
+        // 5. prevReport 설정 (임시 비활성화 - 성능 최적화)
+        // TODO: 데이터 저장 완료 후 별도로 설정
+        // Optional<Report> prevReport = reportRepository
+        //         .findTopByAnalystIdAndStockIdAndReportDateBeforeOrderByReportDateDesc(
+        //                 analyst.getId(),
+        //                 stock.getId(),
+        //                 reportDate
+        //         );
+        // prevReport.ifPresent(report::setPrevReport);
+
+        return report;  // Batch insert를 위해 save 하지 않고 반환
+    }
+
+    /**
+     * DB에 저장된 모든 리포트의 prevReport를 일괄 설정
+     * 같은 애널리스트 + 같은 종목의 직전 리포트를 찾아서 매핑
+     */
+    @Transactional
+    public int updateAllPrevReports() {
+        System.out.println("🔄 모든 리포트의 prevReport 일괄 설정 시작...");
+
+        // 1. 모든 리포트 조회
+        List<Report> allReports = reportRepository.findAll();
+        System.out.println("📊 전체 리포트 수: " + allReports.size());
+
+        int updatedCount = 0;
+
+        // 2. 각 리포트마다 prevReport 설정
+        for (Report report : allReports) {
+            // prevReport가 이미 설정되어 있으면 스킵
+            if (report.getPrevReport() != null) {
+                continue;
+            }
+
+            // 같은 애널리스트 + 같은 종목의 직전 리포트 조회
+            Optional<Report> prevReport = reportRepository
+                    .findTopByAnalystIdAndStockIdAndReportDateBeforeOrderByReportDateDesc(
+                            report.getAnalyst().getId(),
+                            report.getStock().getId(),
+                            report.getReportDate()
+                    );
+
+            // prevReport가 있으면 설정
+            if (prevReport.isPresent()) {
+                report.setPrevReport(prevReport.get());
+                updatedCount++;
+            }
+        }
+
+        // 3. 배치 저장
+        reportRepository.saveAll(allReports);
+        System.out.println("✅ prevReport 설정 완료: " + updatedCount + "개 업데이트됨");
+
+        return updatedCount;
+    }
+
+    /**
+     * DB에 저장된 모든 애널리스트의 지표를 일괄 계산
+     */
+    @Transactional
+    public int calculateAllAnalystMetrics() {
+        System.out.println("📊 모든 애널리스트 지표 일괄 계산 시작...");
+
+        // 1. 모든 애널리스트 조회
+        List<Analyst> allAnalysts = analystRepository.findAll();
+        System.out.println("👥 전체 애널리스트 수: " + allAnalysts.size());
+
+        int calculatedCount = 0;
+
+        // 2. 각 애널리스트마다 지표 계산
+        for (Analyst analyst : allAnalysts) {
+            try {
+                analystMetricsService.calculateAndSaveAccuracyRate(analyst.getId());
+                calculatedCount++;
+
+                // 100명마다 진행 상황 출력
+                if (calculatedCount % 100 == 0) {
+                    System.out.println("⏳ 진행 중: " + calculatedCount + "/" + allAnalysts.size());
+                }
+            } catch (Exception e) {
+                System.err.println("⚠️ 애널리스트 " + analyst.getId() + " 지표 계산 실패: " + e.getMessage());
+            }
+        }
+
+        System.out.println("✅ 애널리스트 지표 계산 완료: " + calculatedCount + "명");
+        return calculatedCount;
     }
 }
