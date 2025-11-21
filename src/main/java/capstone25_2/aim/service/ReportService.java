@@ -455,34 +455,11 @@ public class ReportService {
     }
 
     /**
-     * DB에 저장된 모든 애널리스트의 지표를 일괄 계산
+     * DB에 저장된 모든 애널리스트의 지표를 일괄 계산 (성능 최적화 버전 사용)
      */
     @Transactional
     public int calculateAllAnalystMetrics() {
-        System.out.println("📊 모든 애널리스트 지표 일괄 계산 시작...");
-
-        // 1. 모든 애널리스트 조회
-        List<Analyst> allAnalysts = analystRepository.findAll();
-        System.out.println("👥 전체 애널리스트 수: " + allAnalysts.size());
-
-        int calculatedCount = 0;
-
-        // 2. 각 애널리스트마다 지표 계산
-        for (Analyst analyst : allAnalysts) {
-            try {
-                analystMetricsService.calculateAndSaveAccuracyRate(analyst.getId());
-                calculatedCount++;
-
-                // 100명마다 진행 상황 출력
-                if (calculatedCount % 100 == 0) {
-                    System.out.println("⏳ 진행 중: " + calculatedCount + "/" + allAnalysts.size());
-                }
-            } catch (Exception e) {
-                System.err.println("⚠️ 애널리스트 " + analyst.getId() + " 지표 계산 실패: " + e.getMessage());
-            }
-        }
-
-        System.out.println("✅ 애널리스트 지표 계산 완료: " + calculatedCount + "명");
-        return calculatedCount;
+        // 성능 최적화된 버전으로 위임
+        return analystMetricsService.calculateAllAnalystMetricsWithCache();
     }
 }

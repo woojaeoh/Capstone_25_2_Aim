@@ -12,9 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -89,8 +88,7 @@ public class AnalystMetricsService {
         double totalTargetDiff = 0.0;
         int targetDiffCount = 0; // 목표가 오차율 계산 가능한 리포트 수
 
-        // 상대적 성과 계산 (임시 비활성화 - 성능 최적화)
-        // TODO: 성능 개선 후 다시 활성화
+        // 상대적 성과 계산
         double totalReturnDiff = 0.0; // 종목별 평균 대비 수익률 차이 누적
         int returnDiffCount = 0;
         double totalTargetDiffDiff = 0.0; // 종목별 평균 대비 목표가 오차율 차이 누적
@@ -111,24 +109,24 @@ public class AnalystMetricsService {
                     targetDiffCount++;
                 }
 
-                // 상대적 성과 계산 비활성화 (성능 최적화)
+                // 상대적 성과 계산
                 // 해당 종목에 대한 모든 애널리스트들의 평균 계산 (자기 포함)
-                // StockAverageMetrics stockAvg = calculateStockAverageMetrics(
-                //     report.getStock().getId(),
-                //     fiveYearsAgo
-                // );
-                //
-                // // 수익률 차이 계산
-                // if (stockAvg.averageReturn != null) {
-                //     totalReturnDiff += (result.returnRate - stockAvg.averageReturn);
-                //     returnDiffCount++;
-                // }
-                //
-                // // 목표가 오차율 차이 계산 (의견 일치 케이스만)
-                // if (result.targetDiffRate != null && stockAvg.averageTargetDiff != null) {
-                //     totalTargetDiffDiff += (result.targetDiffRate - stockAvg.averageTargetDiff);
-                //     targetDiffDiffCount++;
-                // }
+                StockAverageMetrics stockAvg = calculateStockAverageMetrics(
+                    report.getStock().getId(),
+                    fiveYearsAgo
+                );
+
+                // 수익률 차이 계산
+                if (stockAvg.averageReturn != null) {
+                    totalReturnDiff += (result.returnRate - stockAvg.averageReturn);
+                    returnDiffCount++;
+                }
+
+                // 목표가 오차율 차이 계산 (의견 일치 케이스만)
+                if (result.targetDiffRate != null && stockAvg.averageTargetDiff != null) {
+                    totalTargetDiffDiff += (result.targetDiffRate - stockAvg.averageTargetDiff);
+                    targetDiffDiffCount++;
+                }
             }
         }
 
@@ -156,6 +154,95 @@ public class AnalystMetricsService {
             : null;
 
         // 4. AnalystMetrics 조회 또는 생성 후 저장
+        AnalystMetrics metrics = analystRepository.findById(analystId)
+                .map(analyst -> analyst.getAnalystMetrics())
+                .orElseGet(AnalystMetrics::new);
+
+        metrics.setAccuracyRate(accuracyRate);
+        metrics.setReturnRate(averageReturn);
+        metrics.setTargetDiffRate(averageTargetDiff);
+        metrics.setAvgReturnDiff(avgReturnDiff);
+        metrics.setAvgTargetDiff(avgTargetDiff);
+        metrics.setAnalyst(analystRepository.findById(analystId).orElseThrow());
+
+        metricsRepository.save(metrics);
+    }
+
+    /**
+     * 애널리스트 정확도, 수익률, 목표가 오차율 계산 후 저장 (전체 평균 비교 버전)
+     * 전체 애널리스트 평균과 비교하여 성능 최적화
+     *
+     * @param analystId 애널리스트 ID
+     * @param globalAverage 전체 애널리스트 평균 메트릭
+     * @param fiveYearsAgo 5년 전 날짜
+     */
+    @Transactional
+    public void calculateAndSaveAccuracyRateWithCache(
+            Long analystId,
+            GlobalAverageMetrics globalAverage,
+            LocalDateTime fiveYearsAgo) {
+
+        // 1. 최근 5년 리포트 조회
+        List<Report> recentReports = reportRepository
+                .findByAnalystIdAndReportDateAfterOrderByReportDateDesc(analystId, fiveYearsAgo);
+
+        if (recentReports.isEmpty()) {
+            return; // 리포트가 없으면 계산 불가
+        }
+
+        // 2. 각 리포트 평가 (정확도, 수익률, 목표가 오차율)
+        int totalEvaluated = 0;
+        int correctCount = 0;
+        double totalReturn = 0.0;
+        double totalTargetDiff = 0.0;
+        int targetDiffCount = 0;
+
+        for (Report report : recentReports) {
+            EvaluationResult result = evaluateReportWithReturn(report);
+            if (result != null) {
+                totalEvaluated++;
+                if (result.isCorrect) {
+                    correctCount++;
+                }
+                totalReturn += result.returnRate;
+
+                // 목표가 오차율: 의견 불일치가 아닌 경우만 집계
+                if (result.targetDiffRate != null) {
+                    totalTargetDiff += result.targetDiffRate;
+                    targetDiffCount++;
+                }
+            }
+        }
+
+        // 3. 정확도, 평균 수익률, 평균 목표가 오차율 계산
+        if (totalEvaluated == 0) {
+            return;
+        }
+
+        double accuracyRate = (double) correctCount / totalEvaluated * 100.0;
+        double averageReturn = totalReturn / totalEvaluated;
+
+        double averageTargetDiff = (targetDiffCount > 0)
+            ? totalTargetDiff / targetDiffCount
+            : 0.0;
+
+        // 4. 전체 애널리스트 평균 대비 차이 계산
+        Double avgReturnDiff = null;
+        Double avgTargetDiff = null;
+
+        if (globalAverage != null) {
+            // 수익률 차이: 이 애널리스트의 평균 수익률 - 전체 평균 수익률
+            if (globalAverage.averageReturn != null) {
+                avgReturnDiff = averageReturn - globalAverage.averageReturn;
+            }
+
+            // 목표가 오차율 차이: 이 애널리스트의 평균 목표가 오차율 - 전체 평균 목표가 오차율
+            if (targetDiffCount > 0 && globalAverage.averageTargetDiff != null) {
+                avgTargetDiff = averageTargetDiff - globalAverage.averageTargetDiff;
+            }
+        }
+
+        // 5. AnalystMetrics 조회 또는 생성 후 저장
         AnalystMetrics metrics = analystRepository.findById(analystId)
                 .map(analyst -> analyst.getAnalystMetrics())
                 .orElseGet(AnalystMetrics::new);
@@ -399,6 +486,94 @@ public class AnalystMetricsService {
     }
 
     /**
+     * 모든 애널리스트의 지표를 전체 평균과 비교하여 일괄 계산 (성능 최적화 버전)
+     *
+     * @return 계산된 애널리스트 수
+     */
+    @Transactional
+    public int calculateAllAnalystMetricsWithCache() {
+        System.out.println("📊 모든 애널리스트 지표 일괄 계산 시작 (최적화 버전)...");
+
+        LocalDateTime fiveYearsAgo = LocalDateTime.now().minusYears(5);
+
+        // 1. 전체 애널리스트의 평균 수익률과 목표가 오차율 계산
+        System.out.println("📈 전체 애널리스트 평균 계산 중...");
+        GlobalAverageMetrics globalAverage = calculateGlobalAverageMetrics(fiveYearsAgo);
+
+        if (globalAverage.averageReturn != null) {
+            System.out.println("  ✓ 전체 평균 수익률: " + String.format("%.2f", globalAverage.averageReturn) + "%");
+        }
+        if (globalAverage.averageTargetDiff != null) {
+            System.out.println("  ✓ 전체 평균 목표가 오차율: " + String.format("%.2f", globalAverage.averageTargetDiff) + "%");
+        }
+
+        // 2. 모든 애널리스트 조회
+        List<Analyst> allAnalysts = analystRepository.findAll();
+        System.out.println("👥 전체 애널리스트 수: " + allAnalysts.size());
+
+        // 3. 각 애널리스트마다 전체 평균과 비교하여 지표 계산
+        int calculatedCount = 0;
+        for (Analyst analyst : allAnalysts) {
+            try {
+                calculateAndSaveAccuracyRateWithCache(analyst.getId(), globalAverage, fiveYearsAgo);
+                calculatedCount++;
+
+                // 10명마다 진행 상황 출력
+                if (calculatedCount % 10 == 0) {
+                    System.out.println("  ⏳ 애널리스트 계산: " + calculatedCount + "/" + allAnalysts.size());
+                }
+            } catch (Exception e) {
+                System.err.println("⚠️ 애널리스트 " + analyst.getId() + " 지표 계산 실패: " + e.getMessage());
+            }
+        }
+
+        System.out.println("✅ 애널리스트 지표 계산 완료: " + calculatedCount + "명");
+        return calculatedCount;
+    }
+
+    /**
+     * 전체 애널리스트의 평균 수익률과 목표가 오차율 계산
+     *
+     * @param fiveYearsAgo 5년 전 날짜
+     * @return 전체 애널리스트들의 평균 메트릭
+     */
+    private GlobalAverageMetrics calculateGlobalAverageMetrics(LocalDateTime fiveYearsAgo) {
+        // 모든 리포트 조회 (최근 5년)
+        List<Report> allReports = reportRepository
+                .findAll().stream()
+                .filter(r -> r.getReportDate().isAfter(fiveYearsAgo))
+                .collect(Collectors.toList());
+
+        if (allReports.isEmpty()) {
+            return new GlobalAverageMetrics(null, null);
+        }
+
+        // 각 리포트 평가
+        double totalReturn = 0.0;
+        int returnCount = 0;
+        double totalTargetDiff = 0.0;
+        int targetDiffCount = 0;
+
+        for (Report report : allReports) {
+            EvaluationResult result = evaluateReportWithReturn(report);
+            if (result != null) {
+                totalReturn += result.returnRate;
+                returnCount++;
+
+                if (result.targetDiffRate != null) {
+                    totalTargetDiff += result.targetDiffRate;
+                    targetDiffCount++;
+                }
+            }
+        }
+
+        Double averageReturn = (returnCount > 0) ? totalReturn / returnCount : null;
+        Double averageTargetDiff = (targetDiffCount > 0) ? totalTargetDiff / targetDiffCount : null;
+
+        return new GlobalAverageMetrics(averageReturn, averageTargetDiff);
+    }
+
+    /**
      * 종목별 평균 메트릭을 담는 내부 클래스
      */
     private static class StockAverageMetrics {
@@ -406,6 +581,19 @@ public class AnalystMetricsService {
         Double averageTargetDiff;  // 해당 종목 모든 애널리스트들의 평균 목표가 오차율
 
         StockAverageMetrics(Double averageReturn, Double averageTargetDiff) {
+            this.averageReturn = averageReturn;
+            this.averageTargetDiff = averageTargetDiff;
+        }
+    }
+
+    /**
+     * 전체 애널리스트 평균 메트릭을 담는 내부 클래스
+     */
+    private static class GlobalAverageMetrics {
+        Double averageReturn;      // 전체 애널리스트들의 평균 수익률
+        Double averageTargetDiff;  // 전체 애널리스트들의 평균 목표가 오차율
+
+        GlobalAverageMetrics(Double averageReturn, Double averageTargetDiff) {
             this.averageReturn = averageReturn;
             this.averageTargetDiff = averageTargetDiff;
         }
