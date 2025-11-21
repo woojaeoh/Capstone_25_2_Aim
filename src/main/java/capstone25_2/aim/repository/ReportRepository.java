@@ -16,6 +16,9 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     List<Report> findByStockId(Long stockId); // 여러 주식 종목들 리스트
     List<Report> findByAnalystId(Long analystId); //여러 애널리스트 리스트
 
+    // 모든 리포트 조회 (날짜 내림차순)
+    List<Report> findByAnalystIdOrderByReportDateDesc(Long analystId);
+
     // 최신 5년 리포트 조회
     List<Report> findByStockIdAndReportDateAfterOrderByReportDateDesc(Long stockId, LocalDateTime fromDate);
     List<Report> findByAnalystIdAndReportDateAfterOrderByReportDateDesc(Long analystId, LocalDateTime fromDate);
