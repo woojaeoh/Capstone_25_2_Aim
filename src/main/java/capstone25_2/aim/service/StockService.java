@@ -1,18 +1,20 @@
 package capstone25_2.aim.service;
 
-import capstone25_2.aim.domain.dto.report.TargetPriceTrendResponseDTO;
-import capstone25_2.aim.domain.dto.stock.ClosePriceTrendDTO;
-import capstone25_2.aim.domain.dto.stock.StockConsensusDTO;
+import capstone25_2.aim.domain.dto.stock.*;
+import capstone25_2.aim.domain.entity.AnalystMetrics;
 import capstone25_2.aim.domain.entity.ClosePrice;
+import capstone25_2.aim.domain.entity.Report;
 import capstone25_2.aim.domain.entity.Stock;
+import capstone25_2.aim.repository.AnalystMetricsRepository;
 import capstone25_2.aim.repository.ClosePriceRepository;
+import capstone25_2.aim.repository.ReportRepository;
 import capstone25_2.aim.repository.StockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.util.List;
-import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,6 +24,8 @@ public class StockService {
     private final StockRepository stockRepository;
     private final ReportService reportService;
     private final ClosePriceRepository closePriceRepository;
+    private final ReportRepository reportRepository;
+    private final AnalystMetricsRepository analystMetricsRepository;
 
     public List<Stock> getAllStocks() {
         return stockRepository.findAll();
@@ -86,8 +90,135 @@ public class StockService {
                 .collect(Collectors.toList());
     }
 
-    // 목표가 변동 추이 조회 (ReportService 위임)
-    public TargetPriceTrendResponseDTO getTargetPriceTrend(Long stockId) {
-        return reportService.getTargetPriceTrend(stockId);
+    // 날짜별 애널리스트 평균 목표주가 계산 (오늘 기준 1년 미만 리포트)
+    public List<DailyAverageTargetPriceDTO> getDailyAverageTargetPrices(Long stockId) {
+        LocalDateTime oneYearAgo = LocalDateTime.now().minusYears(1);
+        List<Report> validReports = reportRepository
+                .findByStockIdAndReportDateAfterOrderByReportDateDesc(stockId, oneYearAgo);
+
+        if (validReports.isEmpty()) {
+            return List.of();
+        }
+
+        // 날짜별로 그룹핑
+        Map<LocalDate, List<Report>> reportsByDate = validReports.stream()
+                .collect(Collectors.groupingBy(report -> report.getReportDate().toLocalDate()));
+
+        // 각 날짜별 평균 목표가 계산
+        return reportsByDate.entrySet().stream()
+                .map(entry -> {
+                    LocalDate date = entry.getKey();
+                    List<Report> reportsOnDate = entry.getValue();
+
+                    Double averageTargetPrice = reportsOnDate.stream()
+                            .map(Report::getTargetPrice)
+                            .filter(Objects::nonNull)
+                            .mapToInt(Integer::intValue)
+                            .average()
+                            .orElse(0.0);
+
+                    return DailyAverageTargetPriceDTO.builder()
+                            .date(date)
+                            .averageTargetPrice(averageTargetPrice)
+                            .build();
+                })
+                .sorted(Comparator.comparing(DailyAverageTargetPriceDTO::getDate))
+                .collect(Collectors.toList());
+    }
+
+    // 현재 기준 목표가 통계 (최대/평균/최소, 오늘 기준 1년 미만 리포트)
+    public TargetPriceStatsDTO getTargetPriceStats(Long stockId) {
+        LocalDateTime oneYearAgo = LocalDateTime.now().minusYears(1);
+        List<Report> validReports = reportRepository
+                .findByStockIdAndReportDateAfterOrderByReportDateDesc(stockId, oneYearAgo);
+
+        if (validReports.isEmpty()) {
+            return null;
+        }
+
+        // 애널리스트별로 최신 리포트만 선택
+        Map<Long, Report> latestReportByAnalyst = new HashMap<>();
+        for (Report report : validReports) {
+            Long analystId = report.getAnalyst().getId();
+            if (!latestReportByAnalyst.containsKey(analystId)) {
+                latestReportByAnalyst.put(analystId, report);
+            }
+        }
+
+        // 목표가 리스트 추출
+        List<Integer> targetPrices = latestReportByAnalyst.values().stream()
+                .map(Report::getTargetPrice)
+                .filter(Objects::nonNull)
+                .collect(Collectors.toList());
+
+        if (targetPrices.isEmpty()) {
+            return null;
+        }
+
+        // 최대/평균/최소 계산
+        Integer maxTargetPrice = targetPrices.stream().max(Integer::compareTo).orElse(null);
+        Integer minTargetPrice = targetPrices.stream().min(Integer::compareTo).orElse(null);
+        Double averageTargetPrice = targetPrices.stream()
+                .mapToInt(Integer::intValue)
+                .average()
+                .orElse(0.0);
+
+        return TargetPriceStatsDTO.builder()
+                .maxTargetPrice(maxTargetPrice)
+                .averageTargetPrice(averageTargetPrice)
+                .minTargetPrice(minTargetPrice)
+                .build();
+    }
+
+    // 해당 종목을 커버하는 애널리스트 목록 (오늘 기준 1년 미만 리포트, 지표 포함)
+    public List<CoveringAnalystDTO> getCoveringAnalysts(Long stockId) {
+        LocalDateTime oneYearAgo = LocalDateTime.now().minusYears(1);
+        List<Report> validReports = reportRepository
+                .findByStockIdAndReportDateAfterOrderByReportDateDesc(stockId, oneYearAgo);
+
+        if (validReports.isEmpty()) {
+            return List.of();
+        }
+
+        // 애널리스트별로 최신 리포트만 선택
+        Map<Long, Report> latestReportByAnalyst = new HashMap<>();
+        for (Report report : validReports) {
+            Long analystId = report.getAnalyst().getId();
+            if (!latestReportByAnalyst.containsKey(analystId)) {
+                latestReportByAnalyst.put(analystId, report);
+            }
+        }
+
+        // 모든 애널리스트의 지표를 한번에 조회
+        List<Long> analystIds = new ArrayList<>(latestReportByAnalyst.keySet());
+        Map<Long, AnalystMetrics> metricsMap = analystMetricsRepository.findAll().stream()
+                .filter(m -> analystIds.contains(m.getAnalyst().getId()))
+                .collect(Collectors.toMap(m -> m.getAnalyst().getId(), m -> m));
+
+        // CoveringAnalystDTO 리스트로 변환 (지표 포함)
+        return latestReportByAnalyst.values().stream()
+                .map(report -> {
+                    Long analystId = report.getAnalyst().getId();
+                    AnalystMetrics metrics = metricsMap.get(analystId);
+
+                    return CoveringAnalystDTO.builder()
+                            .analystId(analystId)
+                            .analystName(report.getAnalyst().getAnalystName())
+                            .firmName(report.getAnalyst().getFirmName())
+                            .latestTargetPrice(report.getTargetPrice())
+                            .latestReportDate(report.getReportDate().toLocalDate())
+                            .latestOpinion(report.getSurfaceOpinion() != null
+                                    ? report.getSurfaceOpinion().toString()
+                                    : null)
+                            // 지표 추가 (없으면 null)
+                            .accuracyRate(metrics != null ? metrics.getAccuracyRate() : null)
+                            .returnRate(metrics != null ? metrics.getReturnRate() : null)
+                            .targetDiffRate(metrics != null ? metrics.getTargetDiffRate() : null)
+                            .avgReturnDiff(metrics != null ? metrics.getAvgReturnDiff() : null)
+                            .avgTargetDiff(metrics != null ? metrics.getAvgTargetDiff() : null)
+                            .build();
+                })
+                .sorted(Comparator.comparing(CoveringAnalystDTO::getLatestReportDate).reversed())
+                .collect(Collectors.toList());
     }
 }
