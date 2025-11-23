@@ -3,6 +3,7 @@ package capstone25_2.aim.service;
 import capstone25_2.aim.domain.dto.stock.*;
 import capstone25_2.aim.domain.entity.AnalystMetrics;
 import capstone25_2.aim.domain.entity.ClosePrice;
+import capstone25_2.aim.domain.entity.HiddenOpinionLabel;
 import capstone25_2.aim.domain.entity.Report;
 import capstone25_2.aim.domain.entity.Stock;
 import capstone25_2.aim.repository.AnalystMetricsRepository;
@@ -201,6 +202,16 @@ public class StockService {
                     Long analystId = report.getAnalyst().getId();
                     AnalystMetrics metrics = metricsMap.get(analystId);
 
+                    // hiddenOpinion을 라벨로 변환
+                    HiddenOpinionLabel hiddenLabel = HiddenOpinionLabel.fromScore(report.getHiddenOpinion());
+
+                    // 직전 리포트 대비 목표주가 차이 계산
+                    Integer targetPriceDiff = null;
+                    if (report.getPrevReport() != null && report.getTargetPrice() != null
+                            && report.getPrevReport().getTargetPrice() != null) {
+                        targetPriceDiff = report.getTargetPrice() - report.getPrevReport().getTargetPrice();
+                    }
+
                     return CoveringAnalystDTO.builder()
                             .analystId(analystId)
                             .analystName(report.getAnalyst().getAnalystName())
@@ -210,6 +221,8 @@ public class StockService {
                             .latestOpinion(report.getSurfaceOpinion() != null
                                     ? report.getSurfaceOpinion().toString()
                                     : null)
+                            .hiddenOpinion(hiddenLabel != null ? hiddenLabel.toString() : null)
+                            .targetPriceDiff(targetPriceDiff)
                             // 지표 추가 (없으면 null)
                             .accuracyRate(metrics != null ? metrics.getAccuracyRate() : null)
                             .returnRate(metrics != null ? metrics.getReturnRate() : null)

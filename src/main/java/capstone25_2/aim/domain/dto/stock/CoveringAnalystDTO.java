@@ -15,7 +15,9 @@ public class CoveringAnalystDTO {
     private String firmName;               // 증권사 이름
     private Integer latestTargetPrice;     // 최신 목표가
     private LocalDate latestReportDate;    // 최신 리포트 날짜
-    private String latestOpinion;          // 최신 의견 (BUY/HOLD/SELL)
+    private String latestOpinion;          // 최신 의견 (surface opinion: BUY/HOLD/SELL)
+    private String hiddenOpinion;          // 숨겨진 의견 (label: STRONG_BUY/BUY/HOLD/SELL/STRONG_SELL)
+    private Integer targetPriceDiff;       // 직전 리포트 대비 목표주가 차이
 
     // 애널리스트 지표 (metrics)
     private Double accuracyRate;           // 예측 정답률 (%)
