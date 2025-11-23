@@ -15,12 +15,10 @@ import java.util.Optional;
 public class StockController {
 
     private final StockService stockService;
-    // 전체 종목 조회
+    // 전체 종목 조회 (상승여력, 매수 비율 포함)
     @GetMapping
-    public List<StockResponseDTO> getAllStocks() {
-        return stockService.getAllStocks().stream()
-                .map(StockResponseDTO::fromEntity)
-                .toList();
+    public List<StockListDTO> getAllStocks() {
+        return stockService.getAllStocksWithRankingInfo();
     }
 
     // 종목 ID로 조회 (종합 의견, 종가 변동 추이, 날짜별 평균 목표주가, 목표가 통계, 커버 애널리스트 포함)

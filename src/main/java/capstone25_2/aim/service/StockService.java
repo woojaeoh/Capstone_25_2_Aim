@@ -32,6 +32,46 @@ public class StockService {
         return stockRepository.findAll();
     }
 
+    // 종목 리스트 조회 (상승여력, 매수 비율 포함)
+    public List<StockListDTO> getAllStocksWithRankingInfo() {
+        List<Stock> stocks = stockRepository.findAll();
+
+        return stocks.stream()
+                .map(stock -> {
+                    StockConsensusDTO consensus = null;
+                    Double upsidePotential = null;
+                    Double buyRatio = null;
+
+                    try {
+                        // 각 종목의 consensus 정보 조회
+                        consensus = reportService.getStockConsensus(stock.getId());
+
+                        // 상승여력 (소수점 한자리)
+                        if (consensus.getUpsidePotential() != null) {
+                            upsidePotential = Math.round(consensus.getUpsidePotential() * 10.0) / 10.0;
+                        }
+
+                        // 매수 비율 계산 (BUY / 전체 * 100, 소수점 한자리)
+                        int totalOpinions = consensus.getBuyCount() + consensus.getHoldCount() + consensus.getSellCount();
+                        if (totalOpinions > 0) {
+                            buyRatio = Math.round((double) consensus.getBuyCount() / totalOpinions * 1000.0) / 10.0;
+                        }
+                    } catch (RuntimeException e) {
+                        // 리포트가 없는 종목은 null 값으로 유지
+                    }
+
+                    return StockListDTO.builder()
+                            .id(stock.getId())
+                            .stockName(stock.getStockName())
+                            .stockCode(stock.getStockCode())
+                            .sector(stock.getSector())
+                            .upsidePotential(upsidePotential)
+                            .buyRatio(buyRatio)
+                            .build();
+                })
+                .collect(Collectors.toList());
+    }
+
     //code는 크롤링 데이터용 식별자 -> 크롤링 시 코드 기준으로 리포트 검색.
     public Optional<Stock> getStockByCode(String stockCode){
         return stockRepository.findByStockCode(stockCode);
