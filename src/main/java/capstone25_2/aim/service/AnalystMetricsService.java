@@ -633,6 +633,12 @@ public class AnalystMetricsService {
     public int calculateAllAnalystMetricsWithCache() {
         System.out.println("📊 모든 애널리스트 지표 일괄 계산 시작 (최적화 버전)...");
 
+        // 0. 모든 기존 메트릭 삭제 (잘못된 데이터 제거)
+        System.out.println("🗑️ 기존 메트릭 초기화 중...");
+        int deletedCount = metricsRepository.findAll().size();
+        metricsRepository.deleteAll();
+        System.out.println("✅ 기존 메트릭 삭제 완료: " + deletedCount + "개");
+
         // 1. 전체 애널리스트의 평균 수익률과 목표가 오차율 계산
         System.out.println("📈 전체 애널리스트 평균 계산 중...");
         GlobalAverageMetrics globalAverage = calculateGlobalAverageMetrics();
