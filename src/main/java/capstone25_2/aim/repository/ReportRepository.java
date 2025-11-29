@@ -36,4 +36,7 @@ public interface ReportRepository extends JpaRepository<Report, Long> {
     // 이전 리포트 조회용: 같은 애널리스트 + 같은 종목 + 현재 날짜 이전 중 가장 최근 리포트
     Optional<Report> findTopByAnalystIdAndStockIdAndReportDateBeforeOrderByReportDateDesc(
             Long analystId, Long stockId, LocalDateTime reportDate);
+
+    // 여러 종목의 리포트를 한 번에 조회 (섹터 페이지 최적화용)
+    List<Report> findByStockIdInAndReportDateAfterOrderByReportDateDesc(List<Long> stockIds, LocalDateTime fromDate);
 }

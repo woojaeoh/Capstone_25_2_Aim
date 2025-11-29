@@ -28,4 +28,7 @@ public interface ClosePriceRepository extends JpaRepository<ClosePrice, Long> {
     // 특정 날짜 이후 가장 가까운 거래일의 종가 조회 (1년 후 실제가 비교용)
     Optional<ClosePrice> findFirstByStockIdAndTradeDateGreaterThanEqualOrderByTradeDateAsc(
             Long stockId, LocalDate fromDate);
+
+    // 여러 종목의 종가를 한 번에 조회 (섹터 페이지 최적화용)
+    List<ClosePrice> findByStockIdInOrderByStockIdAscTradeDateDesc(List<Long> stockIds);
 }
