@@ -16,6 +16,7 @@ public class AnalystMetricsDTO {
     private Double targetDiffRate;    // 목표가 오차율 (%)
     private Double avgReturnDiff;     // 평균 수익 편차
     private Double avgTargetDiff;     // 평균 목표가 편차
+    private Integer aimsScore;        // aim's score (40~100점)
 
     public static AnalystMetricsDTO fromEntity(AnalystMetrics metrics) {
         return AnalystMetricsDTO.builder()
@@ -27,6 +28,7 @@ public class AnalystMetricsDTO {
                 .targetDiffRate(metrics.getTargetDiffRate())
                 .avgReturnDiff(metrics.getAvgReturnDiff())
                 .avgTargetDiff(metrics.getAvgTargetDiff())
+                .aimsScore(metrics.getAimsScore())
                 .build();
     }
 }

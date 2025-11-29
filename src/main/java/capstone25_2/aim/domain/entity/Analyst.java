@@ -9,6 +9,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Entity
+@Table(
+    uniqueConstraints = {
+        @UniqueConstraint(
+            name = "uk_analyst_name_firm",
+            columnNames = {"analyst_name", "firm_name"}
+        )
+    }
+)
 @Getter @Setter
 @NoArgsConstructor
 public class Analyst {
