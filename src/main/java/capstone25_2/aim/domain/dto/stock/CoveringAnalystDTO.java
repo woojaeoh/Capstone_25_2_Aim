@@ -25,4 +25,5 @@ public class CoveringAnalystDTO {
     private Double targetDiffRate;         // 목표가 오차율 (%)
     private Double avgReturnDiff;          // 평균 수익 편차
     private Double avgTargetDiff;          // 평균 목표가 편차
+    private Integer aimsScore;             // aim's score (40~100점)
 }

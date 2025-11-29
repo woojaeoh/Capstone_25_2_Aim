@@ -25,12 +25,14 @@ public class AnalystMetricsService {
     private final ClosePriceRepository closePriceRepository;
 
     // 랭킹 리스트 조회 (기본: accuracyRate 순)
+    @Transactional(readOnly = true)
     public AnalystRankingResponseDTO getRankedAnalysts(String sortBy) {
         List<AnalystMetrics> metricsList = metricsRepository.findAll();
         return createRankedResponse(metricsList,sortBy);
     }
 
     // 🔹 특정 종목 기준 랭킹
+    @Transactional(readOnly = true)
     public AnalystRankingResponseDTO getRankedAnalystsByStock(Long stockId, String sortBy) {
         // 1. 해당 종목의 리포트를 전부 가져옴
         List<Long> analystIds = reportRepository.findByStockId(stockId).stream()
@@ -663,7 +665,150 @@ public class AnalystMetricsService {
         }
 
         System.out.println("✅ 애널리스트 지표 계산 완료: " + calculatedCount + "명");
+
+        // 4. aim's score 일괄 계산
+        System.out.println("🎯 aim's score 일괄 계산 시작...");
+        int scoreCalculatedCount = calculateAllAimsScores();
+        System.out.println("✅ aim's score 계산 완료: " + scoreCalculatedCount + "명");
+
         return calculatedCount;
+    }
+
+    /**
+     * 모든 애널리스트의 aim's score 일괄 계산
+     * 백분위 기반 점수 시스템 (40~100점)
+     *
+     * @return 계산된 애널리스트 수
+     */
+    @Transactional
+    public int calculateAllAimsScores() {
+        // 1. 모든 애널리스트 메트릭 조회
+        List<AnalystMetrics> allMetrics = metricsRepository.findAll();
+
+        if (allMetrics.isEmpty()) {
+            return 0;
+        }
+
+        // 2. 각 지표별 정렬된 리스트 생성
+        List<AnalystMetrics> sortedByReturn = new ArrayList<>(allMetrics);
+        List<AnalystMetrics> sortedByReturnDiff = new ArrayList<>(allMetrics);
+        List<AnalystMetrics> sortedByAccuracy = new ArrayList<>(allMetrics);
+        List<AnalystMetrics> sortedByTargetDiff = new ArrayList<>(allMetrics);
+
+        // 3. 각 지표별로 정렬 (null 값 제외)
+        sortedByReturn = sortedByReturn.stream()
+                .filter(m -> m.getReturnRate() != null)
+                .sorted(Comparator.comparing(AnalystMetrics::getReturnRate))
+                .collect(Collectors.toList());
+
+        sortedByReturnDiff = sortedByReturnDiff.stream()
+                .filter(m -> m.getAvgReturnDiff() != null)
+                .sorted(Comparator.comparing(AnalystMetrics::getAvgReturnDiff))
+                .collect(Collectors.toList());
+
+        sortedByAccuracy = sortedByAccuracy.stream()
+                .filter(m -> m.getAccuracyRate() != null)
+                .sorted(Comparator.comparing(AnalystMetrics::getAccuracyRate))
+                .collect(Collectors.toList());
+
+        sortedByTargetDiff = sortedByTargetDiff.stream()
+                .filter(m -> m.getAvgTargetDiff() != null)
+                .sorted(Comparator.comparing(AnalystMetrics::getAvgTargetDiff))  // 낮을수록 좋음
+                .collect(Collectors.toList());
+
+        // 4. 각 애널리스트의 백분위 계산 및 점수 저장
+        int calculatedCount = 0;
+        for (AnalystMetrics metrics : allMetrics) {
+            try {
+                // 각 지표의 백분위 계산
+                double returnPercentile = calculatePercentile(metrics, sortedByReturn,
+                        AnalystMetrics::getReturnRate);
+                double returnDiffPercentile = calculatePercentile(metrics, sortedByReturnDiff,
+                        AnalystMetrics::getAvgReturnDiff);
+                double accuracyPercentile = calculatePercentile(metrics, sortedByAccuracy,
+                        AnalystMetrics::getAccuracyRate);
+                double targetDiffPercentile = calculateReversePercentile(metrics, sortedByTargetDiff,
+                        AnalystMetrics::getAvgTargetDiff);  // 낮을수록 높은 백분위
+
+                // 가중 백분위 합계 계산
+                double weightedPercentile = (returnPercentile * 0.35) +
+                        (returnDiffPercentile * 0.25) +
+                        (accuracyPercentile * 0.25) +
+                        (targetDiffPercentile * 0.15);
+
+                // 최종 점수 계산 (40~100점 범위)
+                int aimsScore = (int) Math.round(weightedPercentile * 0.6 + 40);
+
+                // 점수 저장
+                metrics.setAimsScore(aimsScore);
+                metricsRepository.save(metrics);
+                calculatedCount++;
+
+            } catch (Exception e) {
+                System.err.println("⚠️ 애널리스트 " + metrics.getAnalyst().getId() +
+                        " aim's score 계산 실패: " + e.getMessage());
+            }
+        }
+
+        return calculatedCount;
+    }
+
+    /**
+     * 백분위 계산 (높을수록 좋은 지표용)
+     *
+     * @param metrics 대상 애널리스트 메트릭
+     * @param sortedList 정렬된 전체 메트릭 리스트 (오름차순)
+     * @param getter 지표 값을 가져오는 함수
+     * @return 백분위 (0~100)
+     */
+    private double calculatePercentile(AnalystMetrics metrics,
+                                       List<AnalystMetrics> sortedList,
+                                       java.util.function.Function<AnalystMetrics, Double> getter) {
+        Double value = getter.apply(metrics);
+        if (value == null || sortedList.isEmpty()) {
+            return 50.0; // 기본값
+        }
+
+        // 정렬된 리스트에서 순위 찾기
+        int rank = 0;
+        for (int i = 0; i < sortedList.size(); i++) {
+            if (sortedList.get(i).getId().equals(metrics.getId())) {
+                rank = i;
+                break;
+            }
+        }
+
+        // 백분위 계산: (순위 / 전체 수) * 100
+        return ((double) rank / sortedList.size()) * 100.0;
+    }
+
+    /**
+     * 역백분위 계산 (낮을수록 좋은 지표용)
+     *
+     * @param metrics 대상 애널리스트 메트릭
+     * @param sortedList 정렬된 전체 메트릭 리스트 (오름차순)
+     * @param getter 지표 값을 가져오는 함수
+     * @return 백분위 (0~100)
+     */
+    private double calculateReversePercentile(AnalystMetrics metrics,
+                                              List<AnalystMetrics> sortedList,
+                                              java.util.function.Function<AnalystMetrics, Double> getter) {
+        Double value = getter.apply(metrics);
+        if (value == null || sortedList.isEmpty()) {
+            return 50.0; // 기본값
+        }
+
+        // 정렬된 리스트에서 순위 찾기
+        int rank = 0;
+        for (int i = 0; i < sortedList.size(); i++) {
+            if (sortedList.get(i).getId().equals(metrics.getId())) {
+                rank = i;
+                break;
+            }
+        }
+
+        // 역백분위 계산: ((전체 수 - 순위 - 1) / 전체 수) * 100
+        return ((double) (sortedList.size() - rank - 1) / sortedList.size()) * 100.0;
     }
 
     /**

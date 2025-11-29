@@ -269,6 +269,7 @@ public class StockService {
                             .targetDiffRate(metrics != null ? metrics.getTargetDiffRate() : null)
                             .avgReturnDiff(metrics != null ? metrics.getAvgReturnDiff() : null)
                             .avgTargetDiff(metrics != null ? metrics.getAvgTargetDiff() : null)
+                            .aimsScore(metrics != null ? metrics.getAimsScore() : null)
                             .build();
                 })
                 .sorted(Comparator.comparing(CoveringAnalystDTO::getLatestReportDate).reversed())
