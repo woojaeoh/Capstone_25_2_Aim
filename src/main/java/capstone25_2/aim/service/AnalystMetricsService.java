@@ -362,7 +362,7 @@ public class AnalystMetricsService {
         // 3. 목표가 오차율 계산: 의견 불일치시 null 반환 (BUY인데 하락 예측 등)
         Double targetDiffRate = null;
         if (!isOpinionMismatch(report.getSurfaceOpinion(), hiddenOpinion)) {
-            targetDiffRate = ((double) (targetPrice - comparePrice) / targetPrice) * 100.0;
+            targetDiffRate = Math.abs((double) (targetPrice - comparePrice) / targetPrice) * 100.0;
         }
 
         return new EvaluationResult(isCorrect, returnRate, targetDiffRate);
@@ -459,7 +459,7 @@ public class AnalystMetricsService {
         // 6. 목표가 오차율 계산: 의견 불일치시 null 반환 (BUY인데 하락 예측 등)
         Double targetDiffRate = null;
         if (!isOpinionMismatch(report.getSurfaceOpinion(), hiddenOpinion)) {
-            targetDiffRate = ((double) (targetPrice - oneYearLaterPrice) / targetPrice) * 100.0;
+            targetDiffRate = Math.abs((double) (targetPrice - oneYearLaterPrice) / targetPrice) * 100.0;
         }
 
         return new EvaluationResult(isCorrect, returnRate, targetDiffRate);
@@ -909,7 +909,8 @@ public class AnalystMetricsService {
      * 소수점 두자리로 반올림
      */
     private double roundToTwoDecimals(double value) {
-        return Math.round(value * 100.0) / 100.0;
+        // 소수점 첫째자리까지 반올림
+        return Math.round(value * 10.0) / 10.0;
     }
 
     /**
