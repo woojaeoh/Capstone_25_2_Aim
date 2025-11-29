@@ -10,8 +10,8 @@ public enum HiddenOpinionLabel {
     /**
      * hiddenOpinion 숫자 값을 5단계 라벨로 변환
      * 0.98 이상: STRONG_BUY
-     * 0.5 ~ 0.98: BUY
-     * 0.17 ~ 0.5: HOLD
+     * 0.45 ~ 0.98: BUY
+     * 0.17 ~ 0.45: HOLD
      * 0.02 ~ 0.17: SELL
      * 0.02 이하: STRONG_SELL
      */
@@ -22,7 +22,7 @@ public enum HiddenOpinionLabel {
 
         if (score >= 0.98) {
             return STRONG_BUY;
-        } else if (score >= 0.5) {
+        } else if (score >= 0.45) {
             return BUY;
         } else if (score >= 0.17) {
             return HOLD;
@@ -50,7 +50,7 @@ public enum HiddenOpinionLabel {
             return null;
         }
 
-        if (score >= 0.5) {
+        if (score >= 0.45) {
             return "BUY";
         } else if (score >= 0.17) {
             return "HOLD";

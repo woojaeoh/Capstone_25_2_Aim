@@ -542,10 +542,10 @@ public class AnalystMetricsService {
         String actualCategory;
         if (actualPrice >= targetPrice) {
             actualCategory = "BUY";  // 목표가 이상 달성
-        } else if (actualPrice >= targetPrice * 0.9) {
-            actualCategory = "HOLD";  // 목표가 90% ~ 100% 사이 (±10% 범위)
+        } else if (actualPrice >= targetPrice * 0.75) {
+            actualCategory = "HOLD";  // 목표가 75% ~ 100% 사이
         } else {
-            actualCategory = "SELL";  // 목표가 90% 미달
+            actualCategory = "SELL";  // 목표가 75% 미달
         }
 
         // 3. 예측과 실제가 일치하면 정답
