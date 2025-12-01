@@ -14,7 +14,8 @@ public class WebConfig implements WebMvcConfigurer {
                         "http://localhost:3000",
                         "https://front-end-peach-pi.vercel.app",
                         "http://localhost:5173",
-                        "https://aim-backend.store"
+                        "https://aim-backend.store",
+                        "https://front-2tcjsinda-bamyangang22s-projects.vercel.app"
                 )
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
                 .allowedHeaders("*")
