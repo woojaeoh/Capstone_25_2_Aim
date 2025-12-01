@@ -12,6 +12,7 @@ import capstone25_2.aim.repository.AnalystRepository;
 import capstone25_2.aim.repository.ReportRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 import java.util.stream.Collectors;
@@ -32,6 +33,7 @@ public class AnalystService {
     }
 
     // 애널리스트가 커버하는 종목 리스트 조회
+    @Transactional(readOnly = true)
     public List<CoveredStockDTO> getCoveredStocks(Long analystId) {
         List<Report> reports = reportRepository.findByAnalystIdOrderByReportDateDesc(analystId);
 
@@ -59,6 +61,7 @@ public class AnalystService {
     }
 
     // 애널리스트의 리포트 목록 조회 (최근 순)
+    @Transactional(readOnly = true)
     public List<AnalystReportSummaryDTO> getAnalystReports(Long analystId) {
         List<Report> reports = reportRepository.findByAnalystIdOrderByReportDateDesc(analystId);
 
@@ -78,6 +81,7 @@ public class AnalystService {
     }
 
     // 애널리스트 지표 조회
+    @Transactional(readOnly = true)
     public AnalystMetricsDTO getAnalystMetrics(Long analystId) {
         Optional<AnalystMetrics> metrics = analystMetricsRepository.findByAnalystId(analystId);
         return metrics.map(AnalystMetricsDTO::fromEntity).orElse(null);

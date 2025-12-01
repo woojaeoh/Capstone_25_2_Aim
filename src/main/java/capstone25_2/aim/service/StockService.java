@@ -12,6 +12,7 @@ import capstone25_2.aim.repository.ReportRepository;
 import capstone25_2.aim.repository.StockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -33,6 +34,7 @@ public class StockService {
     }
 
     // 종목 리스트 조회 (상승여력, 매수 비율 포함)
+    @Transactional(readOnly = true)
     public List<StockListDTO> getAllStocksWithRankingInfo() {
         List<Stock> stocks = stockRepository.findAll();
 
@@ -118,6 +120,7 @@ public class StockService {
     }
 
     // 종가 변동 추이 조회 (최근 5년)
+    @Transactional(readOnly = true)
     public List<ClosePriceTrendDTO> getClosePriceTrend(Long stockId) {
         LocalDate fiveYearsAgo = LocalDate.now().minusYears(5);
         List<ClosePrice> closePrices = closePriceRepository
@@ -132,6 +135,7 @@ public class StockService {
     }
 
     // 날짜별 애널리스트 평균 목표주가 계산 (오늘 기준 1년 미만 리포트)
+    @Transactional(readOnly = true)
     public List<DailyAverageTargetPriceDTO> getDailyAverageTargetPrices(Long stockId) {
         LocalDateTime oneYearAgo = LocalDateTime.now().minusYears(1);
         List<Report> validReports = reportRepository
@@ -168,6 +172,7 @@ public class StockService {
     }
 
     // 현재 기준 목표가 통계 (최대/평균/최소, 오늘 기준 1년 미만 리포트)
+    @Transactional(readOnly = true)
     public TargetPriceStatsDTO getTargetPriceStats(Long stockId) {
         LocalDateTime oneYearAgo = LocalDateTime.now().minusYears(1);
         List<Report> validReports = reportRepository
@@ -212,6 +217,7 @@ public class StockService {
     }
 
     // 해당 종목을 커버하는 애널리스트 목록 (오늘 기준 1년 미만 리포트, 지표 포함)
+    @Transactional(readOnly = true)
     public List<CoveringAnalystDTO> getCoveringAnalysts(Long stockId) {
         LocalDateTime oneYearAgo = LocalDateTime.now().minusYears(1);
         List<Report> validReports = reportRepository
