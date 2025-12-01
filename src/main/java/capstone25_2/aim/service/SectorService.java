@@ -12,6 +12,7 @@ import capstone25_2.aim.repository.ReportRepository;
 import capstone25_2.aim.repository.StockRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.*;
@@ -33,6 +34,7 @@ public class SectorService {
      * 1) 모든 종목 조회
      * 2) 모든 종목의 최근 5년 리포트 한 번에 조회
      */
+    @Transactional(readOnly = true)
     public List<SectorListDTO> getAllSectors() {
         // 1. 모든 종목 조회 (쿼리 1개)
         List<Stock> allStocks = stockRepository.findAll();
@@ -92,6 +94,7 @@ public class SectorService {
      * 2) 해당 섹터 종목들의 최근 5년 리포트 한 번에 조회
      * 3) 해당 섹터 종목들의 최신 종가 한 번에 조회
      */
+    @Transactional(readOnly = true)
     public SectorResponseDTO getSectorDetails(String sectorName) {
         // 1. 해당 섹터의 모든 종목 조회 (쿼리 1개)
         List<Stock> stocks = stockRepository.findBySector(sectorName);

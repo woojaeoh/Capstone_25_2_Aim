@@ -52,6 +52,7 @@ public class ReportService {
     }
 
     // 종목별 목표가 변동 추이 데이터 생성
+    @Transactional(readOnly = true)
     public TargetPriceTrendResponseDTO getTargetPriceTrend(Long stockId){
         List<Report> recentReports = getRecentReportsByStockId(stockId);
 
@@ -89,6 +90,7 @@ public class ReportService {
      * 각 애널리스트의 의견 변화 이후 최신 리포트만 집계 (BUY, HOLD, SELL 개수)
      * 의견 변화가 없으면 최근 5년 리포트 중 최신 리포트 사용
      */
+    @Transactional(readOnly = true)
     public StockConsensusDTO getStockConsensus(Long stockId) {
         // 1. 종목 조회
         Stock stock = stockRepository.findById(stockId)
