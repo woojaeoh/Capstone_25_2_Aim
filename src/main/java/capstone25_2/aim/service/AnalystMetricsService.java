@@ -62,6 +62,14 @@ public class AnalystMetricsService {
                 .map(AnalystMetricsDTO::fromEntity)
                 .toList();
 
+        // 순위 부여
+        int totalAnalysts = ranking.size();
+        for (int i = 0; i < ranking.size(); i++) {
+            AnalystMetricsDTO dto = ranking.get(i);
+            dto.setRank(i + 1);  // 1부터 시작
+            dto.setTotalAnalysts(totalAnalysts);
+        }
+
         return AnalystRankingResponseDTO.builder()
                 .criteria(sortBy)
                 .rankingList(ranking)

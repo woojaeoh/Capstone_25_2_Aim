@@ -323,6 +323,20 @@ public class StockService {
                 .filter(m -> analystIds.contains(m.getAnalyst().getId()))
                 .collect(Collectors.toMap(m -> m.getAnalyst().getId(), m -> m));
 
+        // 전체 애널리스트 순위 계산 (aimsScore 기준 내림차순)
+        List<AnalystMetrics> allMetrics = analystMetricsRepository.findAll();
+        Map<Long, Integer> rankMap = new HashMap<>();
+        int totalAnalysts = allMetrics.size();
+
+        List<AnalystMetrics> sortedByScore = allMetrics.stream()
+                .filter(m -> m.getAimsScore() != null)
+                .sorted(Comparator.comparing(AnalystMetrics::getAimsScore).reversed())
+                .toList();
+
+        for (int i = 0; i < sortedByScore.size(); i++) {
+            rankMap.put(sortedByScore.get(i).getAnalyst().getId(), i + 1);
+        }
+
         // CoveringAnalystDTO 리스트로 변환 (지표 포함)
         return latestReportByAnalyst.values().stream()
                 .map(report -> {
@@ -357,6 +371,8 @@ public class StockService {
                             .avgReturnDiff(metrics != null ? metrics.getAvgReturnDiff() : null)
                             .avgTargetDiff(metrics != null ? metrics.getAvgTargetDiff() : null)
                             .aimsScore(metrics != null ? metrics.getAimsScore() : null)
+                            .rank(rankMap.get(analystId))  // 전체 순위
+                            .totalAnalysts(totalAnalysts)   // 전체 애널리스트 수
                             .build();
                 })
                 .sorted(Comparator.comparing(CoveringAnalystDTO::getLatestReportDate).reversed())
