@@ -1,0 +1,362 @@
+[
+  {
+    "analystName": "이수림",
+    "firmName": "DS투자증권",
+    "stockCode": "007660",
+    "reportTitle": "제대로 믿는 구석",
+    "reportDate": "2025-11-20",
+    "targetPrice": 154000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.9753281474113464
+  },
+  {
+    "analystName": "김진형",
+    "firmName": "DS투자증권",
+    "stockCode": "007660",
+    "reportTitle": "제대로 믿는 구석",
+    "reportDate": "2025-11-20",
+    "targetPrice": 154000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.9753281474113464
+  },
+  {
+    "analystName": "최태용",
+    "firmName": "DS투자증권",
+    "stockCode": "161390",
+    "reportTitle": "실적 우상향과 주주환원의 하모니",
+    "reportDate": "2025-11-27",
+    "targetPrice": 71000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.4746434688568115
+  },
+  {
+    "analystName": "최승호",
+    "firmName": "DS투자증권",
+    "stockCode": "035420",
+    "reportTitle": "결국 부각될 글로벌 유일의 Specialty",
+    "reportDate": "2025-11-28",
+    "targetPrice": 400000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.7806586623191833
+  },
+  {
+    "analystName": "김수현",
+    "firmName": "DS투자증권",
+    "stockCode": "034730",
+    "reportTitle": "도약의 시간",
+    "reportDate": "2025-11-28",
+    "targetPrice": 450000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.9509555697441101
+  },
+  {
+    "analystName": "강태호",
+    "firmName": "DS투자증권",
+    "stockCode": "034730",
+    "reportTitle": "도약의 시간",
+    "reportDate": "2025-11-28",
+    "targetPrice": 450000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.9509555697441101
+  },
+  {
+    "analystName": "정이수",
+    "firmName": "IBK투자증권",
+    "stockCode": "068270",
+    "reportTitle": "높아지는 이익, 확장되는 신약",
+    "reportDate": "2025-11-26",
+    "targetPrice": 230000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.9660077095031738
+  },
+  {
+    "analystName": "김운호",
+    "firmName": "IBK투자증권",
+    "stockCode": "009150",
+    "reportTitle": "4분기 기대 이상, 26년 AI 주도 성장",
+    "reportDate": "2025-12-03",
+    "targetPrice": 330000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.9779937267303467
+  },
+  {
+    "analystName": "고민할필요없는안정감",
+    "firmName": "iM증권",
+    "stockCode": "010140",
+    "reportTitle": "고민할 필요 없는 안정감",
+    "reportDate": "2025-12-02",
+    "targetPrice": 30000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.8331975340843201
+  },
+  {
+    "analystName": "최보영",
+    "firmName": "교보증권",
+    "stockCode": "009150",
+    "reportTitle": "4Q25 Preview 영업이익 추정치 상향",
+    "reportDate": "2025-11-19",
+    "targetPrice": 310000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.9817199110984802
+  },
+  {
+    "analystName": "이희영",
+    "firmName": "대신증권",
+    "stockCode": "207940",
+    "reportTitle": "분할 끝, 리레이팅 시작",
+    "reportDate": "2025-11-25",
+    "targetPrice": 2200000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.9865857362747192
+  },
+  {
+    "analystName": "허민호",
+    "firmName": "대신증권",
+    "stockCode": "010120",
+    "reportTitle": "부산 및 울산 변압기 공장 투어 후기",
+    "reportDate": "2025-12-02",
+    "targetPrice": 630000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.9345362782478333
+  },
+  {
+    "analystName": "권용수",
+    "firmName": "대신증권",
+    "stockCode": "047810",
+    "reportTitle": "시장이 회사에 품는 의문 두 가지",
+    "reportDate": "2025-12-04",
+    "targetPrice": 218000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.2694551944732666
+  },
+  {
+    "analystName": "정의훈",
+    "firmName": "유진투자증권",
+    "stockCode": "251270",
+    "reportTitle": "다 해줬잖아",
+    "reportDate": "2025-11-19",
+    "targetPrice": 80000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.7852475643157959
+  },
+  {
+    "analystName": "양승윤",
+    "firmName": "유진투자증권",
+    "stockCode": "079550",
+    "reportTitle": "3Q25 NDR 후기 - 이겨낼 오해와 편견",
+    "reportDate": "2025-11-24",
+    "targetPrice": 720000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.35543519258499146
+  },
+  {
+    "analystName": "박유악",
+    "firmName": "키움증권",
+    "stockCode": "000660",
+    "reportTitle": "2026년 영업이익 80조원으로 상향",
+    "reportDate": "2025-11-19",
+    "targetPrice": 730000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.9822339415550232
+  },
+  {
+    "analystName": "김진구",
+    "firmName": "키움증권",
+    "stockCode": "035420",
+    "reportTitle": "AI 경쟁력이 요구",
+    "reportDate": "2025-11-28",
+    "targetPrice": 300000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.026822397485375404
+  },
+  {
+    "analystName": "김진구",
+    "firmName": "키움증권",
+    "stockCode": "259960",
+    "reportTitle": "전략을 되돌아 볼 때",
+    "reportDate": "2025-12-01",
+    "targetPrice": 300000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.08180113136768341
+  },
+  {
+    "analystName": "박유악",
+    "firmName": "키움증권",
+    "stockCode": "005930",
+    "reportTitle": "실적 서프라이즈 예상",
+    "reportDate": "2025-12-03",
+    "targetPrice": 140000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.9641980528831482
+  },
+  {
+    "analystName": "최정욱",
+    "firmName": "하나증권",
+    "stockCode": "001040",
+    "reportTitle": "[NDR 후기] 한일령, 상법개정안 수혜 기대",
+    "reportDate": "2025-11-20",
+    "targetPrice": 210000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.5573804378509521
+  },
+  {
+    "analystName": "정소영",
+    "firmName": "하나증권",
+    "stockCode": "001040",
+    "reportTitle": "[NDR 후기] 한일령, 상법개정안 수혜 기대",
+    "reportDate": "2025-11-20",
+    "targetPrice": 210000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.5573804378509521
+  },
+  {
+    "analystName": "유재선",
+    "firmName": "하나증권",
+    "stockCode": "047050",
+    "reportTitle": "인니 현지 팜 기업 인수로 밸류체인 강화",
+    "reportDate": "2025-11-25",
+    "targetPrice": 66000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.9461941123008728
+  },
+  {
+    "analystName": "성무규",
+    "firmName": "하나증권",
+    "stockCode": "047050",
+    "reportTitle": "인니 현지 팜 기업 인수로 밸류체인 강화",
+    "reportDate": "2025-11-25",
+    "targetPrice": 66000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.9461941123008728
+  },
+  {
+    "analystName": "김홍식",
+    "firmName": "하나증권",
+    "stockCode": "017670",
+    "reportTitle": "12월 전략 - 4Q DPS도 감소할 가능성이 높습니다",
+    "reportDate": "2025-11-27",
+    "targetPrice": 55000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.5266236662864685
+  },
+  {
+    "analystName": "이상훈",
+    "firmName": "하나증권",
+    "stockCode": "017670",
+    "reportTitle": "12월 전략 - 4Q DPS도 감소할 가능성이 높습니다",
+    "reportDate": "2025-11-27",
+    "targetPrice": 55000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.5266236662864685
+  },
+  {
+    "analystName": "김홍식",
+    "firmName": "하나증권",
+    "stockCode": "032640",
+    "reportTitle": "12월 전략 - 아직 가격 메리트가 없어 보입니다",
+    "reportDate": "2025-11-27",
+    "targetPrice": 16000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.3506985008716583
+  },
+  {
+    "analystName": "이상훈",
+    "firmName": "하나증권",
+    "stockCode": "032640",
+    "reportTitle": "12월 전략 - 아직 가격 메리트가 없어 보입니다",
+    "reportDate": "2025-11-27",
+    "targetPrice": 16000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.3506985008716583
+  },
+  {
+    "analystName": "김홍식",
+    "firmName": "하나증권",
+    "stockCode": "030200",
+    "reportTitle": "12월 전략 - 이젠 분할 매수 들어가세요",
+    "reportDate": "2025-11-27",
+    "targetPrice": 65000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.6780121326446533
+  },
+  {
+    "analystName": "이상훈",
+    "firmName": "하나증권",
+    "stockCode": "030200",
+    "reportTitle": "12월 전략 - 이젠 분할 매수 들어가세요",
+    "reportDate": "2025-11-27",
+    "targetPrice": 65000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.6780121326446533
+  },
+  {
+    "analystName": "이준호",
+    "firmName": "하나증권",
+    "stockCode": "035420",
+    "reportTitle": "두나무 합병, 선명해진 꿈의 크기",
+    "reportDate": "2025-11-28",
+    "targetPrice": 350000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.7753696441650391
+  },
+  {
+    "analystName": "김홍식",
+    "firmName": "하나증권",
+    "stockCode": "030200",
+    "reportTitle": "곧 밸류업 정책 수혜주로 부상할 것입니다",
+    "reportDate": "2025-12-03",
+    "targetPrice": 70000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.9846969842910767
+  },
+  {
+    "analystName": "이상훈",
+    "firmName": "하나증권",
+    "stockCode": "030200",
+    "reportTitle": "곧 밸류업 정책 수혜주로 부상할 것입니다",
+    "reportDate": "2025-12-03",
+    "targetPrice": 70000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.9846969842910767
+  },
+  {
+    "analystName": "한유정",
+    "firmName": "한화투자증권",
+    "stockCode": "003230",
+    "reportTitle": "두가지 공시의 함의  축복에 끝이 없네",
+    "reportDate": "2025-11-20",
+    "targetPrice": 1800000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.9535302519798279
+  },
+  {
+    "analystName": "배성조",
+    "firmName": "한화투자증권",
+    "stockCode": "047810",
+    "reportTitle": "수출 모멘텀에 대한 갈증 해소 기대",
+    "reportDate": "2025-11-28",
+    "targetPrice": 130000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.9509919881820679
+  },
+  {
+    "analystName": "김나우",
+    "firmName": "한화투자증권",
+    "stockCode": "047810",
+    "reportTitle": "수출 모멘텀에 대한 갈증 해소 기대",
+    "reportDate": "2025-11-28",
+    "targetPrice": 130000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.9509919881820679
+  },
+  {
+    "analystName": "한유정",
+    "firmName": "한화투자증권",
+    "stockCode": "003230",
+    "reportTitle": "NDR 후기  쇼티지 장기화 예상",
+    "reportDate": "2025-12-03",
+    "targetPrice": 1800000,
+    "surfaceOpinion": "buy",
+    "hiddenOpinion": 0.47655534744262695
+  }
+]
