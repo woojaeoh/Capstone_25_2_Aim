@@ -24,7 +24,7 @@ public class AnalystMetricsService {
     private final AnalystRepository analystRepository;
     private final ClosePriceRepository closePriceRepository;
 
-    // 랭킹 리스트 조회 (기본: accuracyRate 순)
+    // 랭킹 리스트 조회 (기본: aimsScore 순)
     @Transactional(readOnly = true)
     public AnalystRankingResponseDTO getRankedAnalysts(String sortBy) {
         List<AnalystMetrics> metricsList = metricsRepository.findAll();
@@ -53,7 +53,8 @@ public class AnalystMetricsService {
     private static AnalystRankingResponseDTO createRankedResponse(List<AnalystMetrics> metricsList, String sortBy) {
         Comparator<AnalystMetrics> comparator = switch (sortBy) {
             case "returnRate" -> Comparator.comparing(AnalystMetrics::getReturnRate).reversed();
-            case "targetDiffRate" -> Comparator.comparing(AnalystMetrics::getTargetDiffRate);
+            case "targetDiffRate" -> Comparator.comparing(AnalystMetrics::getTargetDiffRate); //목표가 오차율은 내림차순 정렬
+            case "aimsScore" -> Comparator.comparing(AnalystMetrics::getAimsScore).reversed(); //오름차순 정렬
             default -> Comparator.comparing(AnalystMetrics::getAccuracyRate).reversed();
         };
 
@@ -199,6 +200,7 @@ public class AnalystMetricsService {
         metrics.setTargetDiffRate(averageTargetDiff != null ? roundToTwoDecimals(averageTargetDiff) : null);
         metrics.setAvgReturnDiff(avgReturnDiff != null ? roundToTwoDecimals(avgReturnDiff) : null);
         metrics.setAvgTargetDiff(avgTargetDiff != null ? roundToTwoDecimals(avgTargetDiff) : null);
+        metrics.setReportCount(allEvaluations.size()); // 평가 가능한 리포트 개수 저장
         metrics.setAnalyst(analystRepository.findById(analystId).orElseThrow());
 
         metricsRepository.save(metrics);
@@ -338,6 +340,7 @@ public class AnalystMetricsService {
         metrics.setTargetDiffRate(averageTargetDiff != null ? roundToTwoDecimals(averageTargetDiff) : null);
         metrics.setAvgReturnDiff(avgReturnDiff != null ? roundToTwoDecimals(avgReturnDiff) : null);
         metrics.setAvgTargetDiff(avgTargetDiff != null ? roundToTwoDecimals(avgTargetDiff) : null);
+        metrics.setReportCount(allEvaluations.size()); // 평가 가능한 리포트 개수 저장
         metrics.setAnalyst(analystRepository.findById(analystId).orElseThrow());
 
         metricsRepository.save(metrics);
@@ -765,10 +768,21 @@ public class AnalystMetricsService {
                         (targetDiffPercentile * 0.15);
 
                 // 최종 점수 계산 (40~100점 범위)
-                int aimsScore = (int) Math.round(weightedPercentile * 0.6 + 40);
+                int rawScore = (int) Math.round(weightedPercentile * 0.6 + 40);
+
+                // 신뢰도 가중치 적용 (reportCount < 3인 경우에만)
+                int finalScore;
+                Integer reportCount = metrics.getReportCount();
+                if (reportCount != null && reportCount < 3) {
+                    double confidenceWeight = Math.min(1.0, reportCount / 3.0);
+                    finalScore = (int) Math.round(rawScore * confidenceWeight);
+                } else {
+                    // reportCount >= 3이면 가중치 적용 안함
+                    finalScore = rawScore;
+                }
 
                 // 점수 저장
-                metrics.setAimsScore(aimsScore);
+                metrics.setAimsScore(finalScore);
                 metricsRepository.save(metrics);
                 calculatedCount++;
 

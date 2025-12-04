@@ -28,7 +28,7 @@ public class AnalystMetricsController {
             summary = "애널리스트 랭킹 페이지"
     )
     public AnalystRankingResponseDTO getAllMetrics(
-            @RequestParam(defaultValue = "accuracyRate") String sortBy) {
+            @RequestParam(defaultValue = "aimsScore") String sortBy) {
         return metricsService.getRankedAnalysts(sortBy);
     }
 
