@@ -225,7 +225,7 @@ public class SectorService {
      *
      * 기존 ReportService.getStockConsensus()와 동일한 로직 사용
      * - 애널리스트별로 그룹핑
-     * - 각 애널리스트의 최신 리포트 선택 (의견 변화는 고려하지 않음 - 간소화)
+     * - 각 애널리스트의 최신 리포트 선택 (1년 이내 리포트만)
      * - hiddenOpinion을 5단계로 변환
      * - 가장 많은 의견을 다수결로 선택
      *
@@ -241,12 +241,17 @@ public class SectorService {
         Map<Long, List<Report>> reportsByAnalyst = stockReports.stream()
                 .collect(Collectors.groupingBy(report -> report.getAnalyst().getId()));
 
-        // 2. 각 애널리스트의 최신 리포트만 선택
+        // 2. 각 애널리스트의 최신 리포트만 선택 (1년 이내 리포트만)
+        LocalDateTime oneYearAgo = LocalDateTime.now().minusYears(1);
         List<Report> latestReportsByAnalyst = new ArrayList<>();
         for (List<Report> analystReports : reportsByAnalyst.values()) {
             // 이미 날짜 내림차순으로 정렬되어 있으므로 첫 번째가 최신
             if (!analystReports.isEmpty()) {
-                latestReportsByAnalyst.add(analystReports.get(0));
+                Report latestReport = analystReports.get(0);
+                // 최신 리포트가 1년 이내인 경우만 포함
+                if (latestReport.getReportDate().isAfter(oneYearAgo)) {
+                    latestReportsByAnalyst.add(latestReport);
+                }
             }
         }
 
@@ -294,11 +299,16 @@ public class SectorService {
         Map<Long, List<Report>> reportsByAnalyst = stockReports.stream()
                 .collect(Collectors.groupingBy(report -> report.getAnalyst().getId()));
 
-        // 2. 각 애널리스트의 최신 리포트만 선택
+        // 2. 각 애널리스트의 최신 리포트만 선택 (1년 이내 리포트만)
+        LocalDateTime oneYearAgo = LocalDateTime.now().minusYears(1);
         List<Report> latestReportsByAnalyst = new ArrayList<>();
         for (List<Report> analystReports : reportsByAnalyst.values()) {
             if (!analystReports.isEmpty()) {
-                latestReportsByAnalyst.add(analystReports.get(0));
+                Report latestReport = analystReports.get(0);
+                // 최신 리포트가 1년 이내인 경우만 포함
+                if (latestReport.getReportDate().isAfter(oneYearAgo)) {
+                    latestReportsByAnalyst.add(latestReport);
+                }
             }
         }
 
