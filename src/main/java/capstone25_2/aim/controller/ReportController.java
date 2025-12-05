@@ -214,8 +214,19 @@ public class ReportController {
         List<ReportRequestDTO> result = new ArrayList<>();
         DateTimeFormatter dateFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
+        // 통계 카운터
+        int totalRows = 0;
+        int columnCountError = 0;
+        int emptyColumnError = 0;
+        int analystNameTooLongError = 0;
+        int parseError = 0;
+        int successCount = 0;
+
         try (CSVReader reader = new CSVReader(new InputStreamReader(file.getInputStream()))) {
             List<String[]> rows = reader.readAll();
+            totalRows = rows.size() - 1; // 헤더 제외
+
+            System.out.println("📄 CSV 파일 읽기 시작: 총 " + totalRows + "개 행");
 
             // 첫 번째 행은 헤더로 스킵
             for (int i = 1; i < rows.size(); i++) {
@@ -223,6 +234,7 @@ public class ReportController {
 
                 // 컬럼 수가 8개가 아니면 스킵
                 if (row.length < 8) {
+                    columnCountError++;
                     continue;
                 }
 
@@ -237,15 +249,22 @@ public class ReportController {
                     String surfaceOpinionStr = row[6].trim();
                     String targetPriceStr = row[7].trim();
 
+                    // stockCode를 6자리로 패딩 (DB에는 007393 형식으로 저장됨)
+                    if (stockCode.matches("\\d+")) {  // 숫자로만 이루어진 경우
+                        stockCode = String.format("%06d", Integer.parseInt(stockCode));
+                    }
+
                     // 컬럼이 하나라도 비어있으면 스킵
                     if (analystName.isEmpty() || firmName.isEmpty() || hiddenOpinionStr.isEmpty() ||
                             reportDateStr.isEmpty() || reportTitle.isEmpty() || stockCode.isEmpty() ||
                             surfaceOpinionStr.isEmpty() || targetPriceStr.isEmpty()) {
+                        emptyColumnError++;
                         continue;
                     }
 
                     // analystName이 4글자 이상이면 스킵
                     if (analystName.length() >= 4) {
+                        analystNameTooLongError++;
                         continue;
                     }
 
@@ -272,12 +291,25 @@ public class ReportController {
                             .build();
 
                     result.add(requestDTO);
+                    successCount++;
                 } catch (Exception e) {
                     // 파싱 오류 발생 시 해당 행 스킵 (예: 날짜 형식 오류, 숫자 변환 오류 등)
+                    parseError++;
+                    System.err.println("⚠️ 파싱 오류 (행 " + (i + 1) + "): " + e.getMessage());
                     continue;
                 }
             }
         }
+
+        // 통계 출력
+        System.out.println("\n📊 CSV 파싱 결과:");
+        System.out.println("  - 총 행 수: " + totalRows);
+        System.out.println("  - 성공: " + successCount + "개");
+        System.out.println("  - 컬럼 수 부족: " + columnCountError + "개");
+        System.out.println("  - 빈 컬럼: " + emptyColumnError + "개");
+        System.out.println("  - 애널리스트명 4글자 이상: " + analystNameTooLongError + "개");
+        System.out.println("  - 파싱 오류: " + parseError + "개");
+        System.out.println("  - 스킵된 총 개수: " + (totalRows - successCount) + "개\n");
 
         return result;
     }
