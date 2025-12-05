@@ -39,10 +39,10 @@ public class ReportService {
         return reportRepository.findById(reportId);
     }
 
-    // 최신 5년의 리포트 리스트 조회 (종목별)
+    // 최신 1년의 리포트 리스트 조회 (종목별)
     public List<Report> getRecentReportsByStockId(Long stockId){
-        LocalDateTime fiveYearsAgo = LocalDateTime.now().minusYears(5);
-        return reportRepository.findByStockIdAndReportDateAfterOrderByReportDateDesc(stockId, fiveYearsAgo);
+        LocalDateTime oneYearAgo = LocalDateTime.now().minusYears(1);
+        return reportRepository.findByStockIdAndReportDateAfterOrderByReportDateDesc(stockId, oneYearAgo);
     }
 
     // 최신 5년의 리포트 리스트 조회 (애널리스트별)
@@ -88,7 +88,7 @@ public class ReportService {
     /**
      * 종목별 surfaceOpinion 종합 의견 조회
      * 각 애널리스트의 의견 변화 이후 최신 리포트만 집계 (BUY, HOLD, SELL 개수)
-     * 의견 변화가 없으면 최근 5년 리포트 중 최신 리포트 사용
+     * 의견 변화가 없으면 최근 1년 리포트 중 최신 리포트 사용
      */
     @Transactional(readOnly = true)
     public StockConsensusDTO getStockConsensus(Long stockId) {
@@ -96,7 +96,7 @@ public class ReportService {
         Stock stock = stockRepository.findById(stockId)
                 .orElseThrow(() -> new RuntimeException("Stock not found"));
 
-        // 2. 해당 종목의 최근 5년 리포트 조회
+        // 2. 해당 종목의 최근 1년 리포트 조회
         List<Report> recentReports = getRecentReportsByStockId(stockId);
 
         if (recentReports.isEmpty()) {
