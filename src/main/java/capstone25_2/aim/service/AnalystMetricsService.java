@@ -391,9 +391,10 @@ public class AnalystMetricsService {
         // 2. 수익률 계산: (비교 시점 주가 - 발행 시점 주가) / 발행 시점 주가 * 100
         double returnRate = ((double) (comparePrice - reportDatePrice) / reportDatePrice) * 100.0;
 
-        // 3. 목표가 오차율 계산: 의견 불일치시 null 반환 (BUY인데 하락 예측 등)
+        // 3. 목표가 오차율 계산: SELL 리포트는 제외, 의견 불일치시도 null 반환
         Double targetDiffRate = null;
-        if (!isOpinionMismatch(report.getSurfaceOpinion(), hiddenOpinion)) {
+        String category = HiddenOpinionLabel.toSimpleCategory(hiddenOpinion);
+        if (!"SELL".equals(category) && !isOpinionMismatch(report.getSurfaceOpinion(), hiddenOpinion)) {
             targetDiffRate = Math.abs((double) (targetPrice - comparePrice) / targetPrice) * 100.0;
         }
 
@@ -452,11 +453,6 @@ public class AnalystMetricsService {
         LocalDateTime oneYearLater = report.getReportDate().plusYears(1);
         Optional<Report> opinionChange = findOpinionChangeBeforeTarget(report, oneYearLater);
 
-        // 의견이 변경되었으면 이 리포트는 평가 제외 (의견 변화 이후의 새 리포트부터 다시 평가)
-        if (opinionChange.isPresent()) {
-            return null;
-        }
-
         // 2. 리포트 발행 시점의 실제 주가 조회
         Optional<ClosePrice> reportDatePriceOpt = getActualPriceAtDate(
                 report.getStock().getId(), report.getReportDate());
@@ -467,6 +463,20 @@ public class AnalystMetricsService {
 
         Integer reportDatePrice = reportDatePriceOpt.get().getClosePrice();
 
+        // 의견이 변경되었으면 의견 변화 시점의 종가와 비교
+        if (opinionChange.isPresent()) {
+            Report changedReport = opinionChange.get();
+            Optional<ClosePrice> changeDatePriceOpt = getActualPriceAtDate(
+                    report.getStock().getId(), changedReport.getReportDate());
+
+            if (changeDatePriceOpt.isEmpty()) {
+                return null; // 의견 변화 시점 주가 데이터 없으면 평가 불가
+            }
+
+            Integer changeDatePrice = changeDatePriceOpt.get().getClosePrice();
+            return evaluateReport(report, reportDatePrice, changeDatePrice);
+        }
+
         // 3. 1년 후의 실제 주가 조회
         Optional<ClosePrice> actualPriceOpt = getActualPriceAtDate(report.getStock().getId(), oneYearLater);
 
@@ -475,26 +485,8 @@ public class AnalystMetricsService {
         }
 
         Integer oneYearLaterPrice = actualPriceOpt.get().getClosePrice();
-        Integer targetPrice = report.getTargetPrice();
-        Double hiddenOpinion = report.getHiddenOpinion();
 
-        if (targetPrice == null || targetPrice == 0 || reportDatePrice == 0) {
-            return null; // 목표가나 발행시점 주가가 없으면 평가 불가
-        }
-
-        // 4. 정확도 판단 (방향성 평가)
-        boolean isCorrect = isOpinionCorrect(hiddenOpinion, reportDatePrice, oneYearLaterPrice);
-
-        // 5. 수익률 계산: (1년 후 종가 - 리포트 발행시점 종가) / 리포트 발행시점 종가 * 100
-        double returnRate = ((double) (oneYearLaterPrice - reportDatePrice) / reportDatePrice) * 100.0;
-
-        // 6. 목표가 오차율 계산: 의견 불일치시 null 반환 (BUY인데 하락 예측 등)
-        Double targetDiffRate = null;
-        if (!isOpinionMismatch(report.getSurfaceOpinion(), hiddenOpinion)) {
-            targetDiffRate = Math.abs((double) (targetPrice - oneYearLaterPrice) / targetPrice) * 100.0;
-        }
-
-        return new EvaluationResult(isCorrect, returnRate, targetDiffRate);
+        return evaluateReport(report, reportDatePrice, oneYearLaterPrice);
     }
 
     /**
@@ -542,21 +534,21 @@ public class AnalystMetricsService {
     }
 
     /**
-     * hiddenOpinion과 실제 주가 변동이 일치하는지 3단계로 판단
+     * hiddenOpinion과 실제 주가 변동이 일치하는지 판단
      *
      * 예측 분류 (3단계):
      * - BUY: hiddenOpinion >= 0.5
      * - HOLD: 0.17 <= hiddenOpinion < 0.5
      * - SELL: hiddenOpinion < 0.17
      *
-     * 실제 결과 분류 (방향성 기준):
-     * - BUY: 1년 후 실제 주가 > 발행 시점 종가 (상승)
-     * - HOLD: -10% <= 수익률 <= +10% (±10% 이내 유지)
-     * - SELL: 1년 후 실제 주가 < 발행 시점 종가 (하락)
+     * 정답 기준:
+     * - BUY 예측: 실제로 조금이라도 올랐으면 정답 (수익률 > 0%)
+     * - SELL 예측: 실제로 조금이라도 떨어졌으면 정답 (수익률 < 0%)
+     * - HOLD 예측: 가격 변화가 ±15% 이내면 정답
      *
      * @param hiddenOpinion 숨겨진 의견 (0.0 ~ 1.0)
      * @param reportDatePrice 리포트 발행 시점 종가
-     * @param actualPrice 1년 후 실제 주가 (또는 의견 변화 시점 주가)
+     * @param actualPrice 비교 시점 주가 (의견 변화 시점 또는 1년 후)
      * @return 예측과 실제가 일치하는지 여부
      */
     private boolean isOpinionCorrect(Double hiddenOpinion, Integer reportDatePrice, Integer actualPrice) {
@@ -573,18 +565,16 @@ public class AnalystMetricsService {
         // 2. 실제 수익률 계산
         double returnRate = ((double) (actualPrice - reportDatePrice) / reportDatePrice) * 100.0;
 
-        // 3. 실제 주가 변동을 3단계로 분류 (방향성 기준)
-        String actualCategory;
-        if (returnRate > 10.0) {
-            actualCategory = "BUY";  // 10% 초과 상승
-        } else if (returnRate >= -10.0) {
-            actualCategory = "HOLD";  // ±10% 이내 유지
-        } else {
-            actualCategory = "SELL";  // 10% 이상 하락
+        // 3. 예측별 정답 기준 적용
+        if ("BUY".equals(predictedCategory)) {
+            return returnRate > 0;  // 조금이라도 올랐으면 정답
+        } else if ("SELL".equals(predictedCategory)) {
+            return returnRate < 0;  // 조금이라도 떨어졌으면 정답
+        } else if ("HOLD".equals(predictedCategory)) {
+            return returnRate >= -15.0 && returnRate <= 15.0;  // ±15% 이내면 정답
         }
 
-        // 4. 예측과 실제가 일치하면 정답
-        return predictedCategory.equals(actualCategory);
+        return false;
     }
 
     /**
