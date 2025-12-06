@@ -106,20 +106,29 @@ public class StockService {
 
                 List<Report> validReports = new ArrayList<>(latestReportByAnalyst.values());
 
-                // surfaceOpinion 별 개수 계산 (매수비율용)
+                // hiddenOpinion 별 개수 계산 (매수비율용)
                 int buyCount = (int) validReports.stream()
-                        .filter(report -> report.getSurfaceOpinion() != null)
-                        .filter(report -> report.getSurfaceOpinion() == SurfaceOpinion.BUY)
+                        .filter(report -> report.getHiddenOpinion() != null)
+                        .filter(report -> {
+                            String category = HiddenOpinionLabel.toSimpleCategory(report.getHiddenOpinion());
+                            return "BUY".equals(category);
+                        })
                         .count();
 
                 int holdCount = (int) validReports.stream()
-                        .filter(report -> report.getSurfaceOpinion() != null)
-                        .filter(report -> report.getSurfaceOpinion() == SurfaceOpinion.HOLD)
+                        .filter(report -> report.getHiddenOpinion() != null)
+                        .filter(report -> {
+                            String category = HiddenOpinionLabel.toSimpleCategory(report.getHiddenOpinion());
+                            return "HOLD".equals(category);
+                        })
                         .count();
 
                 int sellCount = (int) validReports.stream()
-                        .filter(report -> report.getSurfaceOpinion() != null)
-                        .filter(report -> report.getSurfaceOpinion() == SurfaceOpinion.SELL)
+                        .filter(report -> report.getHiddenOpinion() != null)
+                        .filter(report -> {
+                            String category = HiddenOpinionLabel.toSimpleCategory(report.getHiddenOpinion());
+                            return "SELL".equals(category);
+                        })
                         .count();
 
                 int totalOpinions = buyCount + holdCount + sellCount;
@@ -129,8 +138,9 @@ public class StockService {
                     buyRatio = Math.round((double) buyCount / totalOpinions * 1000.0) / 10.0;
                 }
 
-                // 평균 목표가 계산
+                // 평균 목표가 계산 (hiddenOpinion이 있는 리포트만 사용)
                 Double averageTargetPrice = validReports.stream()
+                        .filter(report -> report.getHiddenOpinion() != null)
                         .map(Report::getTargetPrice)
                         .filter(Objects::nonNull)
                         .mapToInt(Integer::intValue)

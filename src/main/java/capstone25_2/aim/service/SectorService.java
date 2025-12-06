@@ -350,14 +350,17 @@ public class SectorService {
             }
         }
 
-        // 3. surfaceOpinion 별 개수 계산 (매수비율용)
+        // 3. hiddenOpinion 별 개수 계산 (매수비율용)
         int buyCount = (int) latestReportsByAnalyst.stream()
-                .filter(report -> report.getSurfaceOpinion() != null)
-                .filter(report -> report.getSurfaceOpinion().name().equals("BUY"))
+                .filter(report -> report.getHiddenOpinion() != null)
+                .filter(report -> {
+                    String category = HiddenOpinionLabel.toSimpleCategory(report.getHiddenOpinion());
+                    return "BUY".equals(category);
+                })
                 .count();
 
         int totalOpinions = (int) latestReportsByAnalyst.stream()
-                .filter(report -> report.getSurfaceOpinion() != null)
+                .filter(report -> report.getHiddenOpinion() != null)
                 .count();
 
         // 4. 매수 비율 계산 (소수점 첫째자리)
@@ -366,8 +369,9 @@ public class SectorService {
             buyRatio = Math.round((double) buyCount / totalOpinions * 1000.0) / 10.0;
         }
 
-        // 5. 평균 목표가 계산
+        // 5. 평균 목표가 계산 (hiddenOpinion이 있는 리포트만 사용)
         Double averageTargetPrice = latestReportsByAnalyst.stream()
+                .filter(report -> report.getHiddenOpinion() != null)
                 .map(Report::getTargetPrice)
                 .filter(Objects::nonNull)
                 .mapToInt(Integer::intValue)
