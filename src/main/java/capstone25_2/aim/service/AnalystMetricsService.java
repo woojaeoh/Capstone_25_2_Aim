@@ -53,12 +53,19 @@ public class AnalystMetricsService {
     private static AnalystRankingResponseDTO createRankedResponse(List<AnalystMetrics> metricsList, String sortBy) {
         Comparator<AnalystMetrics> comparator = switch (sortBy) {
             case "returnRate" -> Comparator.comparing(AnalystMetrics::getReturnRate).reversed();
-            case "targetDiffRate" -> Comparator.comparing(AnalystMetrics::getTargetDiffRate); //목표가 오차율은 내림차순 정렬
-            case "aimsScore" -> Comparator.comparing(AnalystMetrics::getAimsScore).reversed(); //오름차순 정렬
+            case "targetDiffRate" -> Comparator.comparing(AnalystMetrics::getTargetDiffRate); //목표가 오차율은 오름차순 정렬 (낮을수록 좋음)
+            case "aimsScore" -> Comparator.comparing(AnalystMetrics::getAimsScore).reversed();
             default -> Comparator.comparing(AnalystMetrics::getAccuracyRate).reversed();
         };
 
+        // 정렬 기준 필드가 null인 항목 필터링
         List<AnalystMetricsDTO> ranking = metricsList.stream()
+                .filter(m -> switch (sortBy) {
+                    case "returnRate" -> m.getReturnRate() != null;
+                    case "targetDiffRate" -> m.getTargetDiffRate() != null;
+                    case "aimsScore" -> m.getAimsScore() != null;
+                    default -> m.getAccuracyRate() != null;
+                })
                 .sorted(comparator)
                 .map(AnalystMetricsDTO::fromEntity)
                 .toList();
