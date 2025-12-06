@@ -811,16 +811,23 @@ public class AnalystMetricsService {
                 // 최종 점수 계산 (40~100점 범위)
                 int rawScore = (int) Math.round(weightedPercentile * 0.6 + 40);
 
-                // 신뢰도 가중치 적용 (reportCount < 3인 경우에만)
+                // 신뢰도 가중치 적용
                 int finalScore;
                 Integer reportCount = metrics.getReportCount();
-                if (reportCount != null && reportCount < 3) {
-                    double confidenceWeight = Math.min(1.0, reportCount / 3.0);
-                    finalScore = (int) Math.round(rawScore * confidenceWeight);
-                } else {
-                    // reportCount >= 3이면 가중치 적용 안함
-                    finalScore = rawScore;
+                double confidenceWeight = 1.0;
+
+                if (reportCount != null) {
+                    if (reportCount < 3) {
+                        // 4개 미만: 패널티
+                        confidenceWeight = reportCount / 3.0;
+                    } else if (reportCount >= 20) {
+                        // 20개 이상: 5% 보너스
+                        confidenceWeight = 1.05;
+                    }
                 }
+
+                finalScore = (int) Math.round(rawScore * confidenceWeight);
+                finalScore = Math.min(105, finalScore);  // 최대 100점 제한
 
                 // 점수 저장
                 metrics.setAimsScore(finalScore);
