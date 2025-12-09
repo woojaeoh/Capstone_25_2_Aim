@@ -51,6 +51,7 @@ public class StockService {
                 .collect(Collectors.toList());
 
         // 3. 최근 1년간의 리포트를 한 번에 조회 (쿼리 1개)
+
         LocalDateTime oneYearAgo = LocalDateTime.now().minusYears(1);
         List<Report> allReports = reportRepository.findAll().stream()
                 .filter(report -> stockIds.contains(report.getStock().getId()))
@@ -386,12 +387,24 @@ public class StockService {
 
         // AIM's 평균 목표가 (정수로 반올림)
         Integer aimsTargetPrice = null;
+        Integer aimsMinTargetPrice = null;
+        Integer aimsMaxTargetPrice = null;
         if (!aimsTargetPrices.isEmpty()) {
             double aimsAverage = aimsTargetPrices.stream()
                     .mapToDouble(Double::doubleValue)
                     .average()
                     .orElse(0.0);
             aimsTargetPrice = (int) Math.round(aimsAverage);
+
+            // AIM's 최소/최대 목표가
+            aimsMinTargetPrice = (int) Math.round(aimsTargetPrices.stream()
+                    .mapToDouble(Double::doubleValue)
+                    .min()
+                    .orElse(0.0));
+            aimsMaxTargetPrice = (int) Math.round(aimsTargetPrices.stream()
+                    .mapToDouble(Double::doubleValue)
+                    .max()
+                    .orElse(0.0));
         }
 
         return TargetPriceStatsDTO.builder()
@@ -399,6 +412,8 @@ public class StockService {
                 .averageTargetPrice(averageTargetPrice)
                 .minTargetPrice(minTargetPrice)
                 .aimsTargetPrice(aimsTargetPrice)
+                .aimsMinTargetPrice(aimsMinTargetPrice)
+                .aimsMaxTargetPrice(aimsMaxTargetPrice)
                 .build();
     }
 
