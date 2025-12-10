@@ -369,14 +369,24 @@ public class SectorService {
             buyRatio = Math.round((double) buyCount / totalOpinions * 1000.0) / 10.0;
         }
 
-        // 5. AIM's 평균 목표가 계산 (BUY/HOLD: 실제 목표가, SELL: 발행일 종가 × 0.8)
+        // 5. AIM's 평균 목표가 계산 (BUY: 실제 목표가, HOLD: 발행일 종가, SELL: 발행일 종가 × 0.8)
         Double aimsAverageTargetPrice = latestReportsByAnalyst.stream()
                 .filter(report -> report.getHiddenOpinion() != null)
                 .mapToDouble(report -> {
                     String category = HiddenOpinionLabel.toSimpleCategory(report.getHiddenOpinion());
-                    // BUY, HOLD는 실제 목표가 사용
-                    if ("BUY".equals(category) || "HOLD".equals(category)) {
+                    // BUY는 실제 목표가 사용
+                    if ("BUY".equals(category)) {
                         return report.getTargetPrice() != null ? report.getTargetPrice() : 0.0;
+                    }
+                    // HOLD는 발행일 종가 사용 (변화 없음을 의미)
+                    else if ("HOLD".equals(category)) {
+                        java.time.LocalDate reportDate = report.getReportDate().toLocalDate();
+                        java.util.Optional<ClosePrice> reportClosePrice = closePriceRepository
+                                .findFirstByStockIdAndTradeDateLessThanEqualOrderByTradeDateDesc(
+                                        stock.getId(), reportDate);
+                        if (reportClosePrice.isPresent()) {
+                            return reportClosePrice.get().getClosePrice().doubleValue();
+                        }
                     }
                     // SELL은 발행일 종가 × 0.8
                     else if ("SELL".equals(category)) {
