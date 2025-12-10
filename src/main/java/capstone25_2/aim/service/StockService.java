@@ -139,7 +139,7 @@ public class StockService {
                     buyRatio = Math.round((double) buyCount / totalOpinions * 1000.0) / 10.0;
                 }
 
-                // AIM's 평균 목표가 계산 (BUY: 실제 목표가, HOLD: 현재 종가, SELL: 현재 종가 × 0.8)
+                // AIM's 평균 목표가 계산 (BUY: 실제 목표가, HOLD: 발행일 종가, SELL: 발행일 종가 × 0.8)
                 Double aimsAverageTargetPrice = validReports.stream()
                         .filter(report -> report.getHiddenOpinion() != null)
                         .mapToDouble(report -> {
@@ -148,13 +148,25 @@ public class StockService {
                             if ("BUY".equals(category)) {
                                 return report.getTargetPrice() != null ? report.getTargetPrice() : 0.0;
                             }
-                            // HOLD는 현재 종가 사용 (변화 없음을 의미)
+                            // HOLD는 발행일 종가 사용 (변화 없음을 의미)
                             else if ("HOLD".equals(category)) {
-                                return latestClosePrice != null ? latestClosePrice : 0.0;
+                                LocalDate reportDate = report.getReportDate().toLocalDate();
+                                Optional<ClosePrice> reportClosePrice = closePriceRepository
+                                        .findFirstByStockIdAndTradeDateLessThanEqualOrderByTradeDateDesc(
+                                                stock.getId(), reportDate);
+                                if (reportClosePrice.isPresent()) {
+                                    return reportClosePrice.get().getClosePrice().doubleValue();
+                                }
                             }
-                            // SELL은 현재 종가 × 0.8
+                            // SELL은 발행일 종가 × 0.8
                             else if ("SELL".equals(category)) {
-                                return latestClosePrice != null ? latestClosePrice * 0.8 : 0.0;
+                                LocalDate reportDate = report.getReportDate().toLocalDate();
+                                Optional<ClosePrice> reportClosePrice = closePriceRepository
+                                        .findFirstByStockIdAndTradeDateLessThanEqualOrderByTradeDateDesc(
+                                                stock.getId(), reportDate);
+                                if (reportClosePrice.isPresent()) {
+                                    return reportClosePrice.get().getClosePrice() * 0.8;
+                                }
                             }
                             return 0.0;
                         })
