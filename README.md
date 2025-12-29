@@ -11,6 +11,7 @@ AIM은 증권 애널리스트들이 발행하는 리포트를 체계적으로 �
 - 종목별 목표가 통계 및 추이 분석
 - AI 기반 리포트 숨겨진 의견(Hidden Opinion) 분석
 - 섹터별 투자 전망 및 트렌드 파악
+<img width="1894" height="634" alt="스크린샷 2025-12-29 203933" src="https://github.com/user-attachments/assets/bfc20d98-6f54-4b3b-afec-5b0eb8bc920d" />
 
 ## 주요 기능
 
