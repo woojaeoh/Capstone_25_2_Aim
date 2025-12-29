@@ -1,0 +1,71 @@
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import TensorDataset, DataLoader
+
+print("\n===== [2] MLP (Deep Neural Net) 학습 시작 =====")
+
+# 데이터셋 변환 (Numpy -> Tensor)
+train_ds = TensorDataset(torch.tensor(X_train_emb, dtype=torch.float32), torch.tensor(y_train, dtype=torch.long))
+val_ds = TensorDataset(torch.tensor(X_val_emb, dtype=torch.float32), torch.tensor(y_val, dtype=torch.long))
+
+train_loader = DataLoader(train_ds, batch_size=32, shuffle=True)
+val_loader = DataLoader(val_ds, batch_size=32)
+
+# MLP 모델 정의
+class SimpleMLP(nn.Module):
+    def __init__(self, input_dim=768, num_classes=2):
+        super(SimpleMLP, self).__init__()
+        self.layers = nn.Sequential(
+            nn.Linear(input_dim, 512),
+            nn.BatchNorm1d(512),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            
+            nn.Linear(512, 256),
+            nn.BatchNorm1d(256),
+            nn.ReLU(),
+            nn.Dropout(0.3),
+            
+            nn.Linear(256, num_classes)
+        )
+        
+    def forward(self, x):
+        return self.layers(x)
+
+model_mlp = SimpleMLP().to(device)
+criterion = nn.CrossEntropyLoss()
+optimizer = optim.AdamW(model_mlp.parameters(), lr=1e-3)
+
+# 학습 루프
+epochs = 10
+best_acc = 0
+
+for epoch in range(epochs):
+    model_mlp.train()
+    for xb, yb in train_loader:
+        xb, yb = xb.to(device), yb.to(device)
+        optimizer.zero_grad()
+        outputs = model_mlp(xb)
+        loss = criterion(outputs, yb)
+        loss.backward()
+        optimizer.step()
+        
+    # 검증
+    model_mlp.eval()
+    val_preds, val_targets = [], []
+    with torch.no_grad():
+        for xb, yb in val_loader:
+            xb = xb.to(device)
+            outputs = model_mlp(xb)
+            preds = torch.argmax(outputs, dim=1)
+            val_preds.extend(preds.cpu().numpy())
+            val_targets.extend(yb.numpy())
+            
+    acc = accuracy_score(val_targets, val_preds)
+    print(f"Epoch {epoch+1}/{epochs} - Val Acc: {acc:.4f}")
+    
+    if acc > best_acc:
+        best_acc = acc
+        torch.save(model_mlp.state_dict(), str(HOME / "Desktop" / "결과_매수매도_학습" / "best_mlp.pt"))
+
+print(f"MLP Best Accuracy: {best_acc:.4f}")
