@@ -1,0 +1,39 @@
+rom xgboost import XGBClassifier
+from sklearn.metrics import accuracy_score, f1_score
+
+print("\n===== [1] XGBoost 학습 시작 (tuned) =====")
+
+xgb = XGBClassifier(
+    # 구조
+    n_estimators=1200,          
+    learning_rate=0.03,       
+    max_depth=4,            
+    min_child_weight=3,         
+    gamma=0.5,              
+
+    # 서브샘플링(규제 + 일반화)
+    subsample=0.8,              
+    colsample_bytree=0.8,       
+
+    # L2 / L1 규제
+    reg_lambda=1.0,            
+    reg_alpha=0.0,        
+    # 기타
+    objective="binary:logistic",
+    eval_metric="logloss",    
+    random_state=42,
+    n_jobs=-1,
+    tree_method="hist",         
+    early_stopping_rounds=50 
+)
+
+xgb.fit(
+    X_train_emb, y_train,
+    eval_set=[(X_val_emb, y_val)],
+    verbose=True
+)
+
+# 평가
+preds = xgb.predict(X_val_emb)
+print(f"XGBoost Accuracy: {accuracy_score(y_val, preds):.4f}")
+print(f"XGBoost F1 Score: {f1_score(y_val, preds, average='macro'):.4f}")
