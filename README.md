@@ -13,33 +13,62 @@ AIM은 증권 애널리스트들이 발행하는 리포트를 체계적으로 �
 - 섹터별 투자 전망 및 트렌드 파악
 <img width="1894" height="634" alt="스크린샷 2025-12-29 203933" src="https://github.com/user-attachments/assets/bfc20d98-6f54-4b3b-afec-5b0eb8bc920d" />
 
+<img width="1825" height="647" alt="스크린샷 2025-12-29 205523" src="https://github.com/user-attachments/assets/6cab58d0-eda4-48fd-b07b-7b55d278287b" />
+
+<img width="1814" height="646" alt="스크린샷 2025-12-29 205611" src="https://github.com/user-attachments/assets/89e0d8b5-be22-4480-a345-d6d227e4932c" />
+
+<img width="1344" height="768" alt="스크린샷 2025-12-29 210144" src="https://github.com/user-attachments/assets/70da22c4-3ed0-4544-a6f7-617b3cbba82c" />
+
 ## 주요 기능
 
 ### 1. 애널리스트 평가 시스템
 - **AIMS Score**: 목표가 예측 정확도, 의견 적중률 등을 종합한 신뢰도 점수
 - **애널리스트 랭킹**: AIMS Score 기준 순위 제공
 - **트렌딩 애널리스트**: 최근 7일 검색량 기반 인기 애널리스트
+- 
+<img width="824" height="527" alt="image" src="https://github.com/user-attachments/assets/17a02f6c-0450-4bed-87ff-81e08107d8c3" />
+
+<img width="772" height="422" alt="image" src="https://github.com/user-attachments/assets/f67fda97-57a6-4a0a-8649-71b1f1b54a82" />
+
+<img width="891" height="542" alt="image" src="https://github.com/user-attachments/assets/ae35f2fb-4ef6-4f91-a529-92a6becb7822" />
+
 
 ### 2. 종목 분석
 - **목표가 통계**: 종목별 애널리스트 목표가 최대/평균/최소
 - **상승여력 분석**: 현재가 대비 목표가 기반 상승 가능성 계산
 - **컨센서스 의견**: 종목에 대한 애널리스트들의 종합 투자 의견
 - **종가 변동 추이**: 시계열 주가 데이터 시각화
+<img width="1063" height="513" alt="image" src="https://github.com/user-attachments/assets/1a26962b-0fa1-4f44-af6e-4a3b33044af9" />
+
+<img width="729" height="248" alt="image" src="https://github.com/user-attachments/assets/bc5e00ef-5a24-41bf-adcd-210b018945e2" />
+
+<img width="1157" height="461" alt="스크린샷 2025-12-29 232946" src="https://github.com/user-attachments/assets/ca7df17b-ad88-41e8-90b6-bed44faedc00" />
+
+<img width="212" height="158" alt="스크린샷 2025-12-29 233223" src="https://github.com/user-attachments/assets/4c3935a4-55bb-4592-8dcb-681853140581" />
+
 
 ### 3. 리포트 분석
 - **Surface Opinion**: 리포트에 명시된 공개 의견 (BUY/HOLD/SELL)
 - **Hidden Opinion**: AI 모델 기반 숨겨진 의견 분석 (0.0 ~ 1.0 확률)
 - **의견 변화 추적**: 애널리스트별 리포트 이력 및 의견 변경 분석
 
+
 ### 4. 섹터 분석
 - **섹터별 매수 비율**: 각 섹터에 대한 BUY 의견 비율
 - **섹터 랭킹**: 매수 비율 기준 투자 유망 섹터 제공
+
+<img width="1854" height="904" alt="스크린샷 2025-12-29 234052" src="https://github.com/user-attachments/assets/9804f0cb-02d2-44fd-baea-fc6655ded437" />
+
+<img width="1854" height="891" alt="스크린샷 2025-12-29 234530" src="https://github.com/user-attachments/assets/d416a3cc-3e4b-41b8-a620-843400339e20" />
+
 
 ### 5. 통합 대시보드
 - TOP 3 신뢰도 애널리스트 (AIMS Score 기준)
 - TOP 3 상승여력 종목 (목표가 기반)
 - TOP 3 매수 섹터 (매수 의견 비율 기준)
 - 실시간 검색 트렌드
+
+<img width="832" height="531" alt="image" src="https://github.com/user-attachments/assets/275eefa3-c087-4803-b768-db18545dcd8f" />
 
 ## 기술 스택
 
