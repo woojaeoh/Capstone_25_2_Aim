@@ -4,13 +4,17 @@
 
 ## 프로젝트 개요
 
-AIM은 증권 애널리스트들이 발행하는 리포트를 체계적으로 수집·분석하여, **AIMS Score**라는 독자적인 신뢰도 지표를 통해 애널리스트를 평가하는 백엔드 시스템입니다.
+프로젝트 A.I.M(Analyst Insight & Metrics)는 증권사 애널리스트 리포트에 포함된 명시적 의견(explicit opinion)뿐 아니라, 문장 구조,표현 강도,서술 방식에 숨어 있
+는 히든 의견(implicit insight)을 텍스트 분석을 통해 추출하고, 이를 바탕으로 애널리스트의 신뢰도를 평가하는 분석 프로젝트입니다.
+기존 애널리스트 리포트 활용 방식인 “목표주가 / 투자의견”이 아닌 리포트 ‘텍스트 그 자체’를 데이터로 활용하여 애널리스트의 실제 인식을 구조적으로 해석하
+는 것을 핵심으로 합니다.
 
 투자자들에게 다음과 같은 가치를 제공합니다:
 - 애널리스트의 과거 예측 정확도 기반 신뢰도 평가
 - 종목별 목표가 통계 및 추이 분석
 - AI 기반 리포트 숨겨진 의견(Hidden Opinion) 분석
 - 섹터별 투자 전망 및 트렌드 파악
+
 <img width="1894" height="634" alt="스크린샷 2025-12-29 203933" src="https://github.com/user-attachments/assets/bfc20d98-6f54-4b3b-afec-5b0eb8bc920d" />
 
 <img width="1825" height="647" alt="스크린샷 2025-12-29 205523" src="https://github.com/user-attachments/assets/6cab58d0-eda4-48fd-b07b-7b55d278287b" />
@@ -43,6 +47,8 @@ AIM은 증권 애널리스트들이 발행하는 리포트를 체계적으로 �
 <img width="1157" height="461" alt="스크린샷 2025-12-29 232946" src="https://github.com/user-attachments/assets/ca7df17b-ad88-41e8-90b6-bed44faedc00" />
 
 <img width="212" height="158" alt="스크린샷 2025-12-29 233223" src="https://github.com/user-attachments/assets/4c3935a4-55bb-4592-8dcb-681853140581" />
+
+<img width="1149" height="803" alt="스크린샷 2025-12-29 233533" src="https://github.com/user-attachments/assets/333c56e5-0a42-437e-85f9-8f0f01b9fe61" />
 
 
 ### 3. 리포트 분석
@@ -165,7 +171,8 @@ spring:
 ```
 
 5. **API 문서 확인**
-- Swagger UI: http://localhost:8080/swagger-ui/index.html
+- Swagger UI: 36.159.221:8080/swagger-ui/index.html#/
+- 진입 불가능하다면 서버 잠시 중단중
 
 ## 팀원
 
