@@ -17,8 +17,6 @@ AIM은 증권 애널리스트들이 발행하는 리포트를 체계적으로 �
 
 <img width="1814" height="646" alt="스크린샷 2025-12-29 205611" src="https://github.com/user-attachments/assets/89e0d8b5-be22-4480-a345-d6d227e4932c" />
 
-<img width="1344" height="768" alt="스크린샷 2025-12-29 210144" src="https://github.com/user-attachments/assets/70da22c4-3ed0-4544-a6f7-617b3cbba82c" />
-
 ## 주요 기능
 
 ### 1. 애널리스트 평가 시스템
@@ -51,6 +49,8 @@ AIM은 증권 애널리스트들이 발행하는 리포트를 체계적으로 �
 - **Surface Opinion**: 리포트에 명시된 공개 의견 (BUY/HOLD/SELL)
 - **Hidden Opinion**: AI 모델 기반 숨겨진 의견 분석 (0.0 ~ 1.0 확률)
 - **의견 변화 추적**: 애널리스트별 리포트 이력 및 의견 변경 분석
+- 
+<img width="832" height="531" alt="image" src="https://github.com/user-attachments/assets/275eefa3-c087-4803-b768-db18545dcd8f" />
 
 
 ### 4. 섹터 분석
@@ -67,8 +67,7 @@ AIM은 증권 애널리스트들이 발행하는 리포트를 체계적으로 �
 - TOP 3 상승여력 종목 (목표가 기반)
 - TOP 3 매수 섹터 (매수 의견 비율 기준)
 - 실시간 검색 트렌드
-
-<img width="832" height="531" alt="image" src="https://github.com/user-attachments/assets/275eefa3-c087-4803-b768-db18545dcd8f" />
+<img width="1344" height="768" alt="스크린샷 2025-12-29 210144" src="https://github.com/user-attachments/assets/70da22c4-3ed0-4544-a6f7-617b3cbba82c" />
 
 ## 기술 스택
 
